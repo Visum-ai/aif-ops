@@ -6,7 +6,7 @@ Developed for the broader community working on operational semantics for AI fact
 
 ## What this covers
 
-**Equipment classes:** Coolant Distribution Units, cold plates, rear-door heat exchangers, liquid cooling manifolds, immersion cooling tanks, GPU racks, rack PDUs, and busbars, positioned within the Brick class hierarchy.
+**Equipment classes:** Coolant Distribution Units, cold plates, rear-door heat exchangers, liquid cooling manifolds, immersion cooling tanks, GPU racks, rack PDUs, and busways, positioned within the Brick class hierarchy.
 
 **Operational entity classes:** Procedures (MOPs, SOPs, EOPs), failure modes, isolation points, interlocks, lockout/tagout steps, operating modes, events, sequences, actions, maintenance tasks, and commissioning steps.
 

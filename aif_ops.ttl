@@ -59,6 +59,7 @@ aif-ops:Dry_Cooler a owl:Class ;
     rdfs:label "Dry Cooler" .
 
 aif-ops:Compute_Equipment a owl:Class ;
+    rdfs:subClassOf brick:Equipment ;
     rdfs:label "Compute Equipment" .
 
 aif-ops:GPU_Rack a owl:Class ;
