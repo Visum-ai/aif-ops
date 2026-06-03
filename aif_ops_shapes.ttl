@@ -1,0 +1,190 @@
+@prefix sh:             <http://www.w3.org/ns/shacl#> .
+@prefix aif-ops:        <https://visum.ai/ns/aif-ops#> .
+@prefix aif-ops-shapes: <https://visum.ai/ns/aif-ops-shapes#> .
+@prefix brick:          <https://brickschema.org/schema/Brick#> .
+@prefix xsd:            <http://www.w3.org/2001/XMLSchema#> .
+
+# -----------------------------------------------------------------------
+# Section 5.1: Coolant Distribution Unit shape
+# -----------------------------------------------------------------------
+
+aif-ops-shapes:CDU_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Coolant_Distribution_Unit ;
+    sh:property [
+        sh:path aif-ops:hasFailureMode ;
+        sh:minCount 1 ;
+        sh:class aif-ops:FailureMode ;
+        sh:message "A CDU must have at least one documented failure mode." ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:isIsolatedBy ;
+        sh:minCount 1 ;
+        sh:class aif-ops:IsolationPoint ;
+        sh:message "A CDU must have at least one isolation point." ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:hasMaintenanceTask ;
+        sh:minCount 1 ;
+        sh:class aif-ops:MaintenanceTask ;
+        sh:message "A CDU must have at least one scheduled maintenance task." ;
+    ] ;
+    sh:property [
+        sh:path brick:hasPoint ;
+        sh:minCount 1 ;
+        sh:message "A CDU must have at least one associated point." ;
+    ] ;
+    sh:property [
+        sh:path brick:hasPoint ;
+        sh:qualifiedValueShape [ sh:class brick:Leak_Detection_Sensor ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "A CDU must have at least one leak-detection sensor." ;
+    ] ;
+    sh:property [
+        sh:path brick:feeds ;
+        sh:minCount 1 ;
+        sh:message "A CDU must feed at least one downstream component." ;
+    ] ;
+    sh:property [
+        sh:path brick:feeds ;
+        sh:qualifiedValueShape [ sh:or (
+            [ sh:class aif-ops:Cold_Plate ]
+            [ sh:class aif-ops:Rear_Door_Heat_Exchanger ]
+            [ sh:class aif-ops:Immersion_Cooling_Tank ]
+            [ sh:class aif-ops:Liquid_Cooling_Manifold ]
+        ) ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "A CDU must feed at least one cold plate, rear-door heat exchanger, immersion cooling tank, or liquid cooling manifold." ;
+    ] .
+
+# -----------------------------------------------------------------------
+# Section 5.2: Operational entity class shapes (all 11 classes)
+# -----------------------------------------------------------------------
+
+# Procedure: must reference at least one equipment instance and at least one sequence
+aif-ops-shapes:Procedure_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Procedure ;
+    sh:property [
+        sh:path aif-ops:executesOn ;
+        sh:minCount 1 ;
+        sh:class brick:Equipment ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:hasSequence ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Sequence ;
+    ] .
+
+# Sequence: must reference at least one ordered Action
+aif-ops-shapes:Sequence_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Sequence ;
+    sh:property [
+        sh:path aif-ops:hasAction ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Action ;
+    ] .
+
+# Action: must declare its actor (manual or automated) and its position in the sequence
+aif-ops-shapes:Action_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Action ;
+    sh:property [
+        sh:path aif-ops:hasActor ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:nodeKind sh:IRI ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:stepOrder ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:message "Every action must declare its 1-indexed integer position in the sequence." ;
+    ] .
+# NOTE: uniqueness and contiguity of stepOrder values across all actions in a given
+# Sequence cannot be expressed in SHACL Core. Duplicate or gapped orderings will not
+# produce a validation failure. Full ordering integrity requires SHACL-SPARQL (deferred).
+
+# OperatingMode: if a transition exists, it must point at another OperatingMode
+# (sh:minCount 0 because terminal modes such as Shutdown-fault have no outgoing transition)
+aif-ops-shapes:OperatingMode_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:OperatingMode ;
+    sh:property [
+        sh:path aif-ops:transitionsTo ;
+        sh:minCount 0 ;
+        sh:class aif-ops:OperatingMode ;
+    ] .
+
+# Event: if it triggers anything, that target must be a Procedure
+# (sh:minCount 0 because log-only events do not trigger a full Procedure)
+aif-ops-shapes:Event_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Event ;
+    sh:property [
+        sh:path aif-ops:triggers ;
+        sh:minCount 0 ;
+        sh:class aif-ops:Procedure ;
+    ] .
+
+# Interlock: must gate at least one Action
+aif-ops-shapes:Interlock_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Interlock ;
+    sh:property [
+        sh:path aif-ops:gatesAction ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Action ;
+    ] .
+
+# FailureMode: must reference detection plus mitigation
+aif-ops-shapes:FailureMode_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:FailureMode ;
+    sh:property [
+        sh:path aif-ops:hasDetectionSignature ;
+        sh:minCount 1 ;
+        sh:class brick:Point ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:mitigatedBy ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Procedure ;
+    ] .
+
+# MaintenanceTask: must declare schedule as an ISO 8601 duration
+aif-ops-shapes:MaintenanceTask_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:MaintenanceTask ;
+    sh:property [
+        sh:path aif-ops:recursEvery ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:duration ;
+    ] .
+
+# CommissioningStep: must declare pass and fail criteria as literals
+aif-ops-shapes:CommissioningStep_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:CommissioningStep ;
+    sh:property [
+        sh:path aif-ops:hasPassCriteria ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:Literal ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:hasFailCriteria ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:Literal ;
+    ] .
+
+# IsolationPoint: must have an isolation procedure
+aif-ops-shapes:IsolationPoint_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:IsolationPoint ;
+    sh:property [
+        sh:path aif-ops:hasIsolationProcedure ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Procedure ;
+    ] .
+
+# LockoutTagoutStep: must reference its parent isolation procedure
+aif-ops-shapes:LockoutTagoutStep_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:LockoutTagoutStep ;
+    sh:property [
+        sh:path aif-ops:partOfProcedure ;
+        sh:minCount 1 ;
+        sh:class aif-ops:Procedure ;
+    ] .

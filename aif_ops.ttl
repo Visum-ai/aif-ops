@@ -1,0 +1,281 @@
+@prefix aif-ops: <https://visum.ai/ns/aif-ops#> .
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+# Ontology declaration
+
+<https://visum.ai/ns/aif-ops>
+    a owl:Ontology ;
+    owl:imports <https://brickschema.org/schema/1.4.4/Brick> ;
+    rdfs:label "AIF Operations Extension to Brick" .
+
+# -----------------------------------------------------------------------
+# Brick hierarchy stubs: pyshacl does not auto-fetch owl:imports IRIs;
+# these minimal declarations make subclass chains available for sh:class
+# constraint resolution without loading the full Brick 1.4.4 TTL.
+# -----------------------------------------------------------------------
+
+brick:HVAC_Equipment       rdfs:subClassOf brick:Equipment .
+brick:Electrical_Equipment rdfs:subClassOf brick:Equipment .
+brick:Leak_Detection_Sensor rdfs:subClassOf brick:Point .
+
+# -----------------------------------------------------------------------
+# Equipment class additions
+# -----------------------------------------------------------------------
+
+aif-ops:Coolant_Distribution_Unit a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Coolant Distribution Unit" ;
+    rdfs:comment "A liquid-to-liquid heat exchanger that isolates a facility water loop from a technology coolant loop feeding cold plates, rear-door heat exchangers, or immersion tanks." .
+
+aif-ops:Rear_Door_Heat_Exchanger a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Rear Door Heat Exchanger" .
+
+aif-ops:Cold_Plate a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Cold Plate" .
+
+aif-ops:Liquid_Cooling_Manifold a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Liquid Cooling Manifold" .
+
+aif-ops:Row_Manifold a owl:Class ;
+    rdfs:subClassOf aif-ops:Liquid_Cooling_Manifold ;
+    rdfs:label "Row Manifold" .
+
+aif-ops:Rack_Manifold a owl:Class ;
+    rdfs:subClassOf aif-ops:Liquid_Cooling_Manifold ;
+    rdfs:label "Rack Manifold" .
+
+aif-ops:Immersion_Cooling_Tank a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Immersion Cooling Tank" .
+
+aif-ops:Dry_Cooler a owl:Class ;
+    rdfs:subClassOf brick:HVAC_Equipment ;
+    rdfs:label "Dry Cooler" .
+
+aif-ops:Compute_Equipment a owl:Class ;
+    rdfs:label "Compute Equipment" .
+
+aif-ops:GPU_Rack a owl:Class ;
+    rdfs:subClassOf aif-ops:Compute_Equipment ;
+    rdfs:label "GPU Rack" .
+
+aif-ops:Rack_PDU a owl:Class ;
+    rdfs:subClassOf brick:Electrical_Equipment ;
+    rdfs:label "Rack PDU" .
+
+aif-ops:Busway a owl:Class ;
+    rdfs:subClassOf brick:Electrical_Equipment ;
+    rdfs:label "Busway" .
+
+# -----------------------------------------------------------------------
+# Operational entity classes
+# -----------------------------------------------------------------------
+
+aif-ops:Procedure a owl:Class ;
+    rdfs:label "Procedure" ;
+    rdfs:comment "A documented operator action sequence (MOP, SOP, or EOP)." .
+
+aif-ops:MOP a owl:Class ;
+    rdfs:subClassOf aif-ops:Procedure ;
+    rdfs:label "Method of Procedure" .
+
+aif-ops:SOP a owl:Class ;
+    rdfs:subClassOf aif-ops:Procedure ;
+    rdfs:label "Standard Operating Procedure" .
+
+aif-ops:EOP a owl:Class ;
+    rdfs:subClassOf aif-ops:Procedure ;
+    rdfs:label "Emergency Operating Procedure" .
+
+aif-ops:FailureMode a owl:Class ;
+    rdfs:label "Failure Mode" ;
+    rdfs:comment "An FMEA-style failure mode with cause, effect, and detection signature." .
+
+aif-ops:IsolationPoint a owl:Class ;
+    rdfs:label "Isolation Point" ;
+    rdfs:comment "A physical isolation point (valve, breaker, disconnect) at which a piece of equipment can be removed from service." .
+
+aif-ops:Interlock a owl:Class ;
+    rdfs:label "Interlock" ;
+    rdfs:comment "A trip or permissive condition that gates an operator action or automated response on equipment." .
+
+aif-ops:LockoutTagoutStep a owl:Class ;
+    rdfs:label "Lockout Tagout Step" ;
+    rdfs:comment "An atomic step in a LOTO procedure corresponding to one of the OSHA 1910.147 (d) application-of-control steps." .
+
+aif-ops:OperatingMode a owl:Class ;
+    rdfs:label "Operating Mode" ;
+    rdfs:comment "A named discrete state of an equipment unit, such as Online, Standby, Fault, or Shutdown." .
+
+aif-ops:Event a owl:Class ;
+    rdfs:label "Event" ;
+    rdfs:comment "A detected condition (alarm fire, mode change, sensor threshold crossing) that may trigger a Procedure." .
+
+aif-ops:Sequence a owl:Class ;
+    rdfs:label "Sequence" ;
+    rdfs:comment "An ordered set of Actions within a Procedure." .
+
+aif-ops:Action a owl:Class ;
+    rdfs:label "Action" ;
+    rdfs:comment "An atomic operator or automated step within a Sequence." .
+
+aif-ops:ManualAction a owl:Class ;
+    rdfs:subClassOf aif-ops:Action ;
+    rdfs:label "Manual Action" .
+
+aif-ops:AutomatedAction a owl:Class ;
+    rdfs:subClassOf aif-ops:Action ;
+    rdfs:label "Automated Action" .
+
+aif-ops:VerificationAction a owl:Class ;
+    rdfs:subClassOf aif-ops:Action ;
+    rdfs:label "Verification Action" .
+
+aif-ops:MaintenanceTask a owl:Class ;
+    rdfs:label "Maintenance Task" ;
+    rdfs:comment "A scheduled maintenance activity attached to equipment with an explicit recurrence interval." .
+
+aif-ops:CommissioningStep a owl:Class ;
+    rdfs:label "Commissioning Step" ;
+    rdfs:comment "A numbered step in a commissioning procedure with explicit pass and fail criteria." .
+
+# -----------------------------------------------------------------------
+# Object properties
+# -----------------------------------------------------------------------
+
+aif-ops:hasFailureMode a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:FailureMode ;
+    rdfs:label "has failure mode" .
+
+aif-ops:mitigatedBy a owl:ObjectProperty ;
+    rdfs:domain aif-ops:FailureMode ;
+    rdfs:range aif-ops:Procedure ;
+    rdfs:label "mitigated by" .
+
+aif-ops:isIsolatedBy a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:IsolationPoint ;
+    rdfs:label "is isolated by" .
+
+aif-ops:hasInterlock a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:Interlock ;
+    rdfs:label "has interlock" .
+
+aif-ops:hasProcedure a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:Procedure ;
+    rdfs:label "has procedure" .
+
+aif-ops:executesOn a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Procedure ;
+    rdfs:range brick:Equipment ;
+    owl:inverseOf aif-ops:hasProcedure ;
+    rdfs:label "executes on" .
+
+aif-ops:hasSequence a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Procedure ;
+    rdfs:range aif-ops:Sequence ;
+    rdfs:label "has sequence" .
+
+aif-ops:hasAction a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Sequence ;
+    rdfs:range aif-ops:Action ;
+    rdfs:label "has action" .
+
+aif-ops:hasActor a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Action ;
+    rdfs:label "has actor" .
+
+aif-ops:stepOrder a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:Action ;
+    rdfs:range xsd:integer ;
+    rdfs:label "step order" ;
+    rdfs:comment "Integer position of this Action within its parent Sequence. 1-indexed." .
+
+aif-ops:hasOperatingMode a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:OperatingMode ;
+    rdfs:label "has operating mode" .
+
+aif-ops:transitionsTo a owl:ObjectProperty ;
+    rdfs:domain aif-ops:OperatingMode ;
+    rdfs:range aif-ops:OperatingMode ;
+    rdfs:label "transitions to" .
+
+aif-ops:triggers a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Event ;
+    rdfs:range aif-ops:Procedure ;
+    rdfs:label "triggers" .
+
+aif-ops:gatesAction a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Interlock ;
+    rdfs:range aif-ops:Action ;
+    rdfs:label "gates action" .
+
+aif-ops:requires a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Interlock ;
+    rdfs:label "requires" .
+
+aif-ops:prohibits a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Interlock ;
+    rdfs:label "prohibits" .
+
+aif-ops:hasIsolationProcedure a owl:ObjectProperty ;
+    rdfs:domain aif-ops:IsolationPoint ;
+    rdfs:range aif-ops:Procedure ;
+    rdfs:label "has isolation procedure" .
+
+aif-ops:partOfProcedure a owl:ObjectProperty ;
+    rdfs:domain aif-ops:LockoutTagoutStep ;
+    rdfs:range aif-ops:Procedure ;
+    rdfs:label "part of procedure" .
+
+aif-ops:hasDetectionSignature a owl:ObjectProperty ;
+    rdfs:domain aif-ops:FailureMode ;
+    rdfs:range brick:Point ;
+    rdfs:label "has detection signature" .
+
+aif-ops:hasMaintenanceTask a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:MaintenanceTask ;
+    rdfs:label "has maintenance task" .
+
+aif-ops:recursEvery a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:MaintenanceTask ;
+    rdfs:range xsd:duration ;
+    rdfs:label "recurs every" .
+
+aif-ops:requiresPart a owl:ObjectProperty ;
+    rdfs:domain aif-ops:MaintenanceTask ;
+    rdfs:label "requires part" .
+
+aif-ops:hasCommissioningStep a owl:ObjectProperty ;
+    rdfs:domain brick:Equipment ;
+    rdfs:range aif-ops:CommissioningStep ;
+    rdfs:label "has commissioning step" .
+
+aif-ops:hasPassCriteria a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:CommissioningStep ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "has pass criteria" .
+
+aif-ops:hasFailCriteria a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:CommissioningStep ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "has fail criteria" .
+
+# -----------------------------------------------------------------------
+# Provenance predicate
+# -----------------------------------------------------------------------
+
+aif-ops:hasSource a owl:AnnotationProperty ;
+    rdfs:label "has source" ;
+    rdfs:comment "Annotation citing the source document, section, and page for a resource or fact. Used as a direct property on resource nodes in the instance graph. For per-triple provenance at the statement level, the RDF-star quoted-triple pattern applies; for richer derivation metadata (pipeline run, agent, timestamp), W3C PROV-O is the fallback." .
