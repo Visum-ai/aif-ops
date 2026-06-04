@@ -1,0 +1,346 @@
+###############################################################################
+# Vertiv XDU1350B — Day 3 hand-extraction
+#
+# Source: Vertiv XDU1350 Coolant Distribution Unit Operation and Maintenance
+#         Manual, XDU1350B, SL-71310, Vertiv Group Corp., 2025.
+#         File: vertiv-xdu1350b-operation-maintenance-sl-71310.pdf
+#
+# Purpose: Test the aif-ops schema (Section 4 OWL + Section 5 SHACL shapes)
+#          against a real CDU manufacturer document.
+#          All 11 operational entity classes are exercised.
+#
+# To validate with pyshacl (schema files at github.com/Visum-ai/aif-ops):
+#   pyshacl -s aif_ops_shapes.ttl -e aif_ops.ttl \
+#           -df turtle -f table path/to/vertiv-xdu1350-extraction.ttl
+#
+# The -e flag loads the ontology so pyshacl can resolve subclass chains
+# (e.g. Coolant_Distribution_Unit → HVAC_Equipment → Equipment) when
+# checking sh:class constraints without fetching the owl:imports IRI.
+###############################################################################
+
+@prefix aif-ops: <https://visum.ai/ns/aif-ops#> .
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix owl:     <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix xdu:     <https://visum.ai/instances/vertiv-xdu1350b#> .
+
+###############################################################################
+# 1. EQUIPMENT INSTANCE
+###############################################################################
+
+xdu:CDU_1 a aif-ops:Coolant_Distribution_Unit ;
+    # explicit supertype for SHACL validation without loading full Brick TTL
+    a brick:HVAC_Equipment ;
+    rdfs:label "Vertiv XDU1350B Coolant Distribution Unit" ;
+    aif-ops:hasSource "sl-71310 §3 Product Description p.11" .
+
+# Downstream equipment (required by CDU_Shape brick:feeds constraint)
+xdu:ColdPlate_Rack a aif-ops:Cold_Plate ;
+    rdfs:label "Downstream cold plates (liquid-cooled compute racks)" .
+
+xdu:CDU_1 brick:feeds xdu:ColdPlate_Rack .
+
+
+###############################################################################
+# 2. OPERATING MODES  [class: aif-ops:OperatingMode]
+###############################################################################
+
+xdu:Mode_Online a aif-ops:OperatingMode ;
+    rdfs:label "Online (Running)" ;
+    aif-ops:transitionsTo xdu:Mode_Shutdown_Fault ;
+    aif-ops:hasSource "sl-71310 §4.5 Alarm Management Fig 4.18 Unit Mode label 'Online (Running)' p.49" .
+
+xdu:Mode_Shutdown_Fault a aif-ops:OperatingMode ;
+    rdfs:label "Shutdown - Fault" ;
+    # terminal mode — no outgoing transitionsTo; OperatingMode_Shape sh:minCount 0 applies
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Shutdown column p.56; A43 Shutdown column p.57" .
+
+xdu:CDU_1 aif-ops:hasOperatingMode xdu:Mode_Online ;
+    aif-ops:hasOperatingMode xdu:Mode_Shutdown_Fault .
+
+
+###############################################################################
+# 3. SENSOR / BRICK POINT
+###############################################################################
+
+xdu:LeakSwitch_DripTray a brick:Leak_Detection_Sensor ;
+    rdfs:label "Cabinet Drip Tray Level Switch" ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Detail: Level switch in cabinet drip tray has detected a substantial water leak p.56" .
+
+xdu:CDU_1 brick:hasPoint xdu:LeakSwitch_DripTray .
+
+
+###############################################################################
+# 4. FAILURE MODE  [class: aif-ops:FailureMode]
+###############################################################################
+
+xdu:FM_CoolantLeak a aif-ops:FailureMode ;
+    rdfs:label "Coolant Leak Detected in Cabinet Drip Tray" ;
+    aif-ops:hasDetectionSignature xdu:LeakSwitch_DripTray ;
+    aif-ops:mitigatedBy xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Leak - Unit p.56" .
+
+xdu:CDU_1 aif-ops:hasFailureMode xdu:FM_CoolantLeak .
+
+
+###############################################################################
+# 5. EVENTS  [class: aif-ops:Event]
+###############################################################################
+
+# A37 fires and triggers the EOP
+xdu:Event_A37 a aif-ops:Event ;
+    rdfs:label "A37 Leak - Unit Alarm (Type 1 Latching, configurable Shutdown)" ;
+    aif-ops:triggers xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Type=1 Latching=yes Shutdown=(or not) p.56" .
+
+# A44 is a self-clearing log-only event; it does NOT trigger a full Procedure.
+# Exercises the triggers sh:minCount 0 constraint (log-only events are valid).
+xdu:Event_A44 a aif-ops:Event ;
+    rdfs:label "A44 Level Sensor - No Fluid Detected (Type 2 self-clear, log only)" ;
+    # no aif-ops:triggers triple — self-clearing, does not launch a Procedure
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A44 Type=2 Self-clear=yes p.57" .
+
+
+###############################################################################
+# 6. INTERLOCKS  [class: aif-ops:Interlock]
+###############################################################################
+
+# Action gated by these interlocks
+xdu:Action_StartUnit a aif-ops:ManualAction ;
+    rdfs:label "Press Start/Stop ON button on Home Screen to start CDU" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "sl-71310 §4.3 Automatic Operation p.39" .
+
+# A27 Pump Low Flow: Type 1 latching. If pumps do not reach flow/DP setpoint
+# within 100 seconds, A27 fires. Gates the start action (unit cannot start
+# and remain running if pumps cannot achieve flow).
+xdu:Interlock_A27_PumpLowFlow a aif-ops:Interlock ;
+    rdfs:label "A27 Pump Low Flow Trip (100 s default)" ;
+    aif-ops:gatesAction xdu:Action_StartUnit ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A27: Pumps have not reached flow/DP setpoint in default 100 s; Type=1 Latching p.55" .
+
+# A43 Insufficient Fluid: Type 1 latching, Shutdown. On initial startup the
+# unit will not start if level sensors are not made and fill pump cannot
+# achieve pressure. While running, unit shuts down after 1 second.
+xdu:Interlock_A43_InsufficientFluid a aif-ops:Interlock ;
+    rdfs:label "A43 Insufficient Fluid Shutdown Interlock" ;
+    aif-ops:gatesAction xdu:Action_StartUnit ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A43 Type=1 Latching=yes Shutdown=yes p.57" .
+
+xdu:CDU_1 aif-ops:hasInterlock xdu:Interlock_A27_PumpLowFlow ;
+    aif-ops:hasInterlock xdu:Interlock_A43_InsufficientFluid .
+
+
+###############################################################################
+# 7. ISOLATION POINTS  [class: aif-ops:IsolationPoint]
+###############################################################################
+
+# Electrical isolation: remote disconnect switch. The iCOM controller does NOT
+# isolate power in Unit Off mode; opening the remote disconnect switch is the
+# only way to ensure NO voltage inside the unit.
+xdu:IP_ElectricalDisconnect a aif-ops:IsolationPoint ;
+    rdfs:label "Remote Electrical Disconnect Switch" ;
+    aif-ops:hasIsolationProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §1.5 Electrical Connection p.6: the only way to ensure there is NO voltage inside the unit is to install and open a remote disconnect switch" .
+
+# Fluid isolation: field-supplied external isolation valves on both supply
+# and return pipes, installed by the installer close to the XDU1350.
+xdu:IP_FluidIsolationValve_Supply a aif-ops:IsolationPoint ;
+    rdfs:label "Field-Supplied External Fluid Isolation Valve (Primary Supply Pipe)" ;
+    aif-ops:hasIsolationProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §5.5 Unit Draining p.75: field supplied external isolation valves should be fitted by the installer to both supply and return pipes" .
+
+xdu:IP_FluidIsolationValve_Return a aif-ops:IsolationPoint ;
+    rdfs:label "Field-Supplied External Fluid Isolation Valve (Primary Return Pipe)" ;
+    aif-ops:hasIsolationProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §5.5 Unit Draining p.75: field supplied external isolation valves should be fitted to both supply and return pipes" .
+
+# Secondary filter isolation valves (items 4 and 5 in Fig 5.2), used during
+# filter service MOP. Can be operated while unit is running.
+xdu:IP_FilterIsolationValve_4 a aif-ops:IsolationPoint ;
+    rdfs:label "Secondary Filter Isolation Valve 4 (Fig 5.2 Item 4)" ;
+    aif-ops:hasIsolationProcedure xdu:MOP_FilterService ;
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 4: Filter isolation valve p.73" .
+
+xdu:IP_FilterIsolationValve_5 a aif-ops:IsolationPoint ;
+    rdfs:label "Secondary Filter Isolation Valve 5 (Fig 5.2 Item 5)" ;
+    aif-ops:hasIsolationProcedure xdu:MOP_FilterService ;
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 5: Filter isolation valve p.73" .
+
+# IP_FilterIsolationValve_4/5 isolate only the secondary filter branch (hot-swap,
+# unit remains running per §5.4) — they are not unit-level isolation points for CDU_1.
+xdu:CDU_1 aif-ops:isIsolatedBy xdu:IP_ElectricalDisconnect ;
+    aif-ops:isIsolatedBy xdu:IP_FluidIsolationValve_Supply ;
+    aif-ops:isIsolatedBy xdu:IP_FluidIsolationValve_Return .
+
+
+###############################################################################
+# 8. LOCKOUT-TAGOUT STEPS  [class: aif-ops:LockoutTagoutStep]
+###############################################################################
+# Source: sl-71310 §1.1 General p.4, numbered list items 1-3.
+# "Before any maintenance work being carried out, ensure: 1. Equipment is
+# switched OFF. 2. Equipment and controls are disconnected from the electrical
+# supply. 3. All rotating parts such as pumps and 3-way valve have come to rest."
+
+xdu:LOTO_Step1 a aif-ops:LockoutTagoutStep ;
+    rdfs:label "LOTO Step 1: Switch equipment OFF via control panel" ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:partOfProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 1" .
+
+xdu:LOTO_Step2 a aif-ops:LockoutTagoutStep ;
+    rdfs:label "LOTO Step 2: Disconnect equipment and controls from electrical supply (open remote disconnect switch)" ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:partOfProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 2; §1.5 Electrical Connection p.6" .
+
+xdu:LOTO_Step3 a aif-ops:LockoutTagoutStep ;
+    rdfs:label "LOTO Step 3: Verify all rotating parts (pumps and 3-way valve) have come to rest" ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:partOfProcedure xdu:EOP_CoolantLeak ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 3" .
+
+
+###############################################################################
+# 9. EOP: COOLANT LEAK RESPONSE  [class: aif-ops:EOP]
+# Primary procedure — exercises Procedure, Sequence, Action, Event, Interlock,
+# FailureMode, OperatingMode, IsolationPoint, LockoutTagoutStep (9 of 11 classes)
+###############################################################################
+
+xdu:EOP_CoolantLeak a aif-ops:EOP ;
+    rdfs:label "XDU1350B EOP: Coolant Leak Response (A37 Leak - Unit)" ;
+    aif-ops:executesOn xdu:CDU_1 ;
+    aif-ops:hasSequence xdu:Seq_LeakResponse ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action p.56; §1.1 General pre-maintenance steps p.4" .
+
+xdu:Seq_LeakResponse a aif-ops:Sequence ;
+    rdfs:label "A37 Leak Response Sequence" ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action p.56; §1.1 General p.4 (steps 1-3)" ;
+    aif-ops:hasAction xdu:Action_IdentifyLeak ;
+    aif-ops:hasAction xdu:Action_SwitchOff ;
+    aif-ops:hasAction xdu:Action_DisconnectElectrical ;
+    aif-ops:hasAction xdu:Action_VerifyRotatingPartsStopped ;
+    aif-ops:hasAction xdu:Action_RepairLeak ;
+    aif-ops:hasAction xdu:Action_ClearA37Alarm .
+
+xdu:Operator a owl:NamedIndividual ;
+    rdfs:label "On-shift CDU operator" .
+
+xdu:Action_IdentifyLeak a aif-ops:ManualAction ;
+    rdfs:label "Identify the location and extent of the coolant leak" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action: Identify and repair the leak p.56" .
+
+xdu:Action_SwitchOff a aif-ops:ManualAction ;
+    rdfs:label "Switch equipment OFF via the Start/Stop button on the Home Screen" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 1; §4.3 Automatic Operation Fig 4.11 p.39" .
+
+xdu:Action_DisconnectElectrical a aif-ops:ManualAction ;
+    rdfs:label "Open remote disconnect switch to isolate all electrical supply from unit" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 2; §1.5 p.6: install and open a remote disconnect switch" .
+
+xdu:Action_VerifyRotatingPartsStopped a aif-ops:VerificationAction ;
+    rdfs:label "Verify all rotating parts (pumps and 3-way cooling valve) have come to rest before opening any panels" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4 item 3" .
+
+xdu:Action_RepairLeak a aif-ops:ManualAction ;
+    rdfs:label "Repair the coolant leak source" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action: Identify and repair the leak p.56" .
+
+xdu:Action_ClearA37Alarm a aif-ops:ManualAction ;
+    rdfs:label "Log in at service level and press Clear Alarms to clear the latching A37 alarm" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 6 ;
+    aif-ops:hasSource "sl-71310 §4.5 Alarm Management p.50: Latching alarms need to be manually cleared when logged on at the service level or higher by pressing the Clear Alarms button" .
+
+
+###############################################################################
+# 10. MAINTENANCE TASK  [class: aif-ops:MaintenanceTask]
+###############################################################################
+
+xdu:MT_FilterInspection_3month a aif-ops:MaintenanceTask ;
+    rdfs:label "3-Month Planned Preventative Maintenance: Secondary Filter Inspection" ;
+    aif-ops:recursEvery "P3M"^^xsd:duration ;
+    aif-ops:hasSource "sl-71310 §5.3 Planned Preventative Maintenance p.71: planned maintenance every 3 months; includes checking secondary filter differential pressure and filter service if required" .
+
+xdu:CDU_1 aif-ops:hasMaintenanceTask xdu:MT_FilterInspection_3month .
+
+
+###############################################################################
+# 11. COMMISSIONING STEP  [class: aif-ops:CommissioningStep]
+# Micro-test — sourced from §5.3 6-month PM pump changeover simulation.
+# CommissioningStep does not appear in the primary EOP (expected: commissioning
+# steps are a separate procedure class in data center operations).
+###############################################################################
+
+xdu:CS_PumpChangeover a aif-ops:CommissioningStep ;
+    rdfs:label "6-Month PM: Pump Changeover Simulation" ;
+    aif-ops:hasPassCriteria "Standby pump successfully assumes full load within the default 0.25-second changeover time; no A27 Pump Low Flow or secondary temperature alarm (A36) is generated during or after changeover" ;
+    aif-ops:hasFailCriteria "Primary pump fails to ramp down, or standby pump fails to reach flow/DP setpoint within default 100 seconds (A27 Pump Low Flow alarm generated)" ;
+    aif-ops:hasSource "sl-71310 §5.3 Planned Preventative Maintenance p.72: Simulate the pump change over (6-month interval); §4.6 Table 4.39 A27 Pump Low Flow Type=1 p.55; §4.3.2 changeover default time 0.25 seconds p.47" .
+
+xdu:CDU_1 aif-ops:hasCommissioningStep xdu:CS_PumpChangeover .
+
+
+###############################################################################
+# 12. MOP: SECONDARY FILTER SERVICE  [class: aif-ops:MOP]
+# Secondary micro-test procedure — exercises filter IsolationPoints and a
+# second Sequence instance. Can be performed while unit is running.
+###############################################################################
+
+xdu:MOP_FilterService a aif-ops:MOP ;
+    rdfs:label "XDU1350B MOP: Secondary Filter Service (§5.4)" ;
+    aif-ops:executesOn xdu:CDU_1 ;
+    aif-ops:hasSequence xdu:Seq_FilterService ;
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service p.73-74; NOTE: can be performed while unit is running if the pump/filter being cleaned is in out-of-service state via service secondary pumps menu" .
+
+xdu:Seq_FilterService a aif-ops:Sequence ;
+    rdfs:label "Secondary Filter Service Sequence" ;
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service p.73-74 (steps 1-5)" ;
+    aif-ops:hasAction xdu:Action_OpenCabinetDoors ;
+    aif-ops:hasAction xdu:Action_CloseFilterValves ;
+    aif-ops:hasAction xdu:Action_ConnectDrainHose ;
+    aif-ops:hasAction xdu:Action_WithdrawFilter ;
+    aif-ops:hasAction xdu:Action_CleanFilter .
+
+xdu:Action_OpenCabinetDoors a aif-ops:ManualAction ;
+    rdfs:label "Open cabinet front doors and swing electrical panel up and out of the way (as shown in Fig 5.1)" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "sl-71310 §5.4 p.74 step 1" .
+
+xdu:Action_CloseFilterValves a aif-ops:ManualAction ;
+    rdfs:label "Close filter isolation valves 4 and 5 to positions shown by red handle outlines (handles vertical/horizontal as shown in Fig 5.2)" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "sl-71310 §5.4 p.74 step 2" .
+
+xdu:Action_ConnectDrainHose a aif-ops:ManualAction ;
+    rdfs:label "Connect hose to drain valve 3" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "sl-71310 §5.4 p.74 step 3" .
+
+xdu:Action_WithdrawFilter a aif-ops:ManualAction ;
+    rdfs:label "Undo clamp ring, withdraw cap and filter screen using the Tee handle, lift filter screen up and out through front of unit" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "sl-71310 §5.4 p.74 step 4" .
+
+xdu:Action_CleanFilter a aif-ops:ManualAction ;
+    rdfs:label "Rinse filter with DI water or PG solution and let drip dry" ;
+    aif-ops:hasActor xdu:Operator ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "sl-71310 §5.4 p.74 step 5" .
