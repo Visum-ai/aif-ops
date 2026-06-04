@@ -89,8 +89,7 @@ ex:Seq_Isolation a aif-ops:Sequence ;
     rdfs:label "Isolation sequence" ;
     aif-ops:hasAction ex:Action_NotifyOps,
                       ex:Action_CloseSupplyValve,
-                      ex:Action_CloseReturnValve,
-                      ex:Action_OpenSupplyValve .
+                      ex:Action_CloseReturnValve .
 
 ex:Action_NotifyOps a aif-ops:ManualAction ;
     rdfs:label "Notify operations center before isolation" ;
@@ -106,11 +105,6 @@ ex:Action_CloseReturnValve a aif-ops:ManualAction ;
     rdfs:label "Close CDU A1 return shutoff valve" ;
     aif-ops:hasActor ex:Role_DataCenterOperator ;
     aif-ops:stepOrder 3 .
-
-ex:Action_OpenSupplyValve a aif-ops:ManualAction ;
-    rdfs:label "Open CDU A1 supply valve to restore flow" ;
-    aif-ops:hasActor ex:Role_DataCenterOperator ;
-    aif-ops:stepOrder 4 .
 
 # Actor
 
