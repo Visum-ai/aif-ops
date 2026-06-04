@@ -5,7 +5,7 @@ This document records open design questions and expressibility gaps in the curre
 Entries are grouped into two categories:
 
 - **Ambiguities:** concepts whose semantics are under-specified and could be interpreted in more than one way
-- **Limitations:** constraints that are intentionally desired but cannot be expressed in SHACL Core
+- **Limitations:** constraints or typing decisions that are either not yet implemented, cannot be expressed in SHACL Core without additional shape features, or are deliberately left open pending broader community resolution
 
 ---
 
@@ -61,7 +61,7 @@ Both `IsolationPoint` and `Interlock` gate equipment actions. `IsolationPoint` i
 
 ---
 
-## Limitations (SHACL Core)
+## Limitations
 
 ### L1: `stepOrder` uniqueness and contiguity
 
@@ -100,3 +100,13 @@ Shapes target parent classes directly (`aif-ops:Procedure`, `aif-ops:Action`, `a
 **Consequence:** No shape validates the object of these properties, so any IRI will pass.
 
 **Resolution path:** Once the target vocabulary for conditions and states is agreed (e.g. Brick `Point`, `aif-ops:OperatingMode`, or a dedicated `aif-ops:Condition` class), add `rdfs:range` declarations and corresponding shape constraints.
+
+---
+
+### L5: `Action` membership in a `Sequence` is not enforced
+
+`Action_Shape` does not require that an `Action` instance be referenced by any `Sequence` via `aif-ops:hasAction`. An `Action` can exist as a standalone node — for example, as the sole target of an `aif-ops:gatesAction` triple on an `Interlock` — with no parent `Sequence` or `Procedure`. The ontology comment describes `Action` as a step "within a Sequence," but `Action_Shape` has no corresponding inverse-path constraint.
+
+**Consequence:** Instance graphs that model interlock permissive conditions as `Action` nodes without defining a full startup procedure pass validation. The XDU1350B extraction demonstrates this: `xdu:Action_StartUnit` is gated by two interlocks but belongs to no `Sequence`. The CDU100 example reproduces the same pattern with `ex:Action_StartCDU_A1`. Because `Action_Shape` simultaneously requires `stepOrder` on every `Action`, these standalone nodes must carry a `stepOrder` value that has no meaningful context — a placeholder forced by the shape, not a real procedure step.
+
+**Resolution path:** Two options, both expressible in SHACL Core: (1) add an inverse-path property shape to `Action_Shape` — `sh:path [ sh:inversePath aif-ops:hasAction ] ; sh:minCount 1 ; sh:class aif-ops:Sequence` — to require every `Action` to be a member of at least one `Sequence`; or (2) introduce a separate `aif-ops:PermissiveTarget` class for actions that exist solely as interlock gate targets, keeping `Action` strictly scoped to procedural steps. Option 1 is simpler but would break current instance graphs that use standalone actions as interlock gates. Option 2 requires a schema change and instance migration. Deferred pending broader community review.
