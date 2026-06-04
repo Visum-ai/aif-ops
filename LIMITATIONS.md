@@ -31,13 +31,11 @@ Entries are grouped into two categories:
 
 ---
 
-### A3: `hasActor` open range
+### A3: `performedBy` range — resolved
 
-`aif-ops:hasActor` has no `rdfs:range` declaration. The intended object is whichever IRI identifies the actor responsible for an `Action`: a person, a role, an automated system, or an external agent. Leaving the range open allows maximum flexibility but gives no guidance to implementers about what vocabulary to use for actor identity.
+`aif-ops:performedBy` (the successor to the earlier open-ranged `hasActor`) now has `rdfs:range aif-ops:Actor`. The `aif-ops:Actor` class ships with four named-individual roles: `aif-ops:Operator`, `aif-ops:Technician`, `aif-ops:SafetyOfficer`, and `aif-ops:SystemAutomation`. Site-specific role extensions must subclass `aif-ops:Actor` and carry an `rdfs:label`. The `Actor_Shape` enforces the label requirement.
 
-**Consequence:** Instance graphs from different sources will use incompatible actor vocabularies, making cross-graph queries unreliable.
-
-**Resolution path:** Recommend a specific actor vocabulary (e.g. ORG ontology roles, PROV-O `prov:Agent`) in a usage note, or introduce an `aif-ops:Actor` superclass that implementers can subclass.
+**Status:** Resolved. The open-range ambiguity is closed; instance graphs that previously used local actor IRIs should migrate to the named individuals or declare a typed subclass.
 
 ---
 

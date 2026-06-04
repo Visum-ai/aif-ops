@@ -7,7 +7,7 @@
 #
 # Purpose: Test the aif-ops schema (Section 4 OWL + Section 5 SHACL shapes)
 #          against a real CDU manufacturer document.
-#          All 11 operational entity classes are exercised.
+#          All 12 operational entity classes are exercised.
 #
 # To validate with pyshacl (schema files at github.com/Visum-ai/aif-ops):
 #   pyshacl -s aif_ops_shapes.ttl -e aif_ops.ttl \
@@ -25,6 +25,16 @@
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 @prefix xdu:     <https://visum.ai/instances/vertiv-xdu1350b#> .
+
+###############################################################################
+# ACTOR ROLES (named individuals from aif_ops.ttl; re-asserted here so that
+# pyshacl sh:class checks resolve without OWL inference)
+###############################################################################
+
+aif-ops:Operator       a aif-ops:Actor ; rdfs:label "Operator" .
+aif-ops:Technician     a aif-ops:Actor ; rdfs:label "Technician" .
+aif-ops:SafetyOfficer  a aif-ops:Actor ; rdfs:label "Safety Officer" .
+aif-ops:SystemAutomation a aif-ops:Actor ; rdfs:label "System Automation" .
 
 ###############################################################################
 # 1. EQUIPMENT INSTANCE
@@ -110,7 +120,7 @@ xdu:Event_A44 a aif-ops:Event ;
 # Action gated by these interlocks
 xdu:Action_StartUnit a aif-ops:ManualAction ;
     rdfs:label "Press Start/Stop ON button on Home Screen to start CDU" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 1 ; # placeholder required by Action_Shape; see L5 in LIMITATIONS.md
     aif-ops:hasSource "sl-71310 §4.3 Automatic Operation p.39" .
 
@@ -163,12 +173,12 @@ xdu:IP_FluidIsolationValve_Return a aif-ops:IsolationPoint ;
 xdu:IP_FilterIsolationValve_4 a aif-ops:IsolationPoint ;
     rdfs:label "Secondary Filter Isolation Valve 4 (Fig 5.2 Item 4)" ;
     aif-ops:hasIsolationProcedure xdu:MOP_FilterService ;
-    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 4: Filter isolation valve p.73" .
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 4: Filter isolation valve p.74" .
 
 xdu:IP_FilterIsolationValve_5 a aif-ops:IsolationPoint ;
     rdfs:label "Secondary Filter Isolation Valve 5 (Fig 5.2 Item 5)" ;
     aif-ops:hasIsolationProcedure xdu:MOP_FilterService ;
-    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 5: Filter isolation valve p.73" .
+    aif-ops:hasSource "sl-71310 §5.4 Secondary Filter Service Fig 5.2 Item 5: Filter isolation valve p.74" .
 
 # IP_FilterIsolationValve_4/5 isolate only the secondary filter branch (hot-swap,
 # unit remains running per §5.4) — they are not unit-level isolation points for CDU_1.
@@ -220,48 +230,62 @@ xdu:Seq_LeakResponse a aif-ops:Sequence ;
     rdfs:label "A37 Leak Response Sequence" ;
     aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action p.56; §1.1 General p.4 (steps 1-3)" ;
     aif-ops:hasAction xdu:Action_IdentifyLeak ;
+    aif-ops:hasAction xdu:Action_EscalateToSafetyOfficer ; # fault branch from step 1 (see on_failure)
     aif-ops:hasAction xdu:Action_SwitchOff ;
     aif-ops:hasAction xdu:Action_DisconnectElectrical ;
     aif-ops:hasAction xdu:Action_VerifyRotatingPartsStopped ;
     aif-ops:hasAction xdu:Action_RepairLeak ;
     aif-ops:hasAction xdu:Action_ClearA37Alarm .
 
-xdu:Operator a owl:NamedIndividual ;
-    rdfs:label "On-shift CDU operator" .
 
 xdu:Action_IdentifyLeak a aif-ops:ManualAction ;
     rdfs:label "Identify the location and extent of the coolant leak" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
+    aif-ops:verb "Verify" ;
     aif-ops:stepOrder 1 ;
+    aif-ops:on_failure xdu:Action_EscalateToSafetyOfficer ;
     aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action: Identify and repair the leak p.56" .
+
+# Fault branch: if leak cannot be identified, escalate before proceeding
+xdu:Action_EscalateToSafetyOfficer a aif-ops:ManualAction ;
+    rdfs:label "Escalate to Safety Officer if leak source cannot be identified" ;
+    aif-ops:performedBy aif-ops:SafetyOfficer ;
+    aif-ops:verb "Wait" ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "sl-71310 §1.1 General p.4: all maintenance must be performed by qualified personnel" .
 
 xdu:Action_SwitchOff a aif-ops:ManualAction ;
     rdfs:label "Switch equipment OFF via the Start/Stop button on the Home Screen" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
+    aif-ops:verb "Stop" ;
     aif-ops:stepOrder 2 ;
     aif-ops:hasSource "sl-71310 §1.1 General p.4 item 1; §4.3 Automatic Operation Fig 4.11 p.39" .
 
 xdu:Action_DisconnectElectrical a aif-ops:ManualAction ;
     rdfs:label "Open remote disconnect switch to isolate all electrical supply from unit" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
+    aif-ops:verb "Open" ;
     aif-ops:stepOrder 3 ;
     aif-ops:hasSource "sl-71310 §1.1 General p.4 item 2; §1.5 p.6: install and open a remote disconnect switch" .
 
 xdu:Action_VerifyRotatingPartsStopped a aif-ops:VerificationAction ;
     rdfs:label "Verify all rotating parts (pumps and 3-way cooling valve) have come to rest before opening any panels" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
+    aif-ops:verb "Verify" ;
     aif-ops:stepOrder 4 ;
     aif-ops:hasSource "sl-71310 §1.1 General p.4 item 3" .
 
 xdu:Action_RepairLeak a aif-ops:ManualAction ;
     rdfs:label "Repair the coolant leak source" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Technician ;
+    aif-ops:verb "Set" ;
     aif-ops:stepOrder 5 ;
     aif-ops:hasSource "sl-71310 §4.6 Table 4.39 A37 Action: Identify and repair the leak p.56" .
 
 xdu:Action_ClearA37Alarm a aif-ops:ManualAction ;
     rdfs:label "Log in at service level and press Clear Alarms to clear the latching A37 alarm" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
+    aif-ops:verb "Reset" ;
     aif-ops:stepOrder 6 ;
     aif-ops:hasSource "sl-71310 §4.5 Alarm Management p.50: Latching alarms need to be manually cleared when logged on at the service level or higher by pressing the Clear Alarms button" .
 
@@ -317,30 +341,30 @@ xdu:Seq_FilterService a aif-ops:Sequence ;
 
 xdu:Action_OpenCabinetDoors a aif-ops:ManualAction ;
     rdfs:label "Open cabinet front doors and swing electrical panel up and out of the way (as shown in Fig 5.1)" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 1 ;
     aif-ops:hasSource "sl-71310 §5.4 p.74 step 1" .
 
 xdu:Action_CloseFilterValves a aif-ops:ManualAction ;
     rdfs:label "Close filter isolation valves 4 and 5 to positions shown by red handle outlines (handles vertical/horizontal as shown in Fig 5.2)" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 2 ;
     aif-ops:hasSource "sl-71310 §5.4 p.74 step 2" .
 
 xdu:Action_ConnectDrainHose a aif-ops:ManualAction ;
     rdfs:label "Connect hose to drain valve 3" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 3 ;
     aif-ops:hasSource "sl-71310 §5.4 p.74 step 3" .
 
 xdu:Action_WithdrawFilter a aif-ops:ManualAction ;
     rdfs:label "Undo clamp ring, withdraw cap and filter screen using the Tee handle, lift filter screen up and out through front of unit" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 4 ;
     aif-ops:hasSource "sl-71310 §5.4 p.74 step 4" .
 
 xdu:Action_CleanFilter a aif-ops:ManualAction ;
     rdfs:label "Rinse filter with DI water or PG solution and let drip dry" ;
-    aif-ops:hasActor xdu:Operator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 5 ;
     aif-ops:hasSource "sl-71310 §5.4 p.74 step 5" .

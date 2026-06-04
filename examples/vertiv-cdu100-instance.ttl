@@ -8,6 +8,13 @@
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:      <https://example.org/dc1#> .
 
+# Actor roles (re-asserted from aif_ops.ttl for standalone pyshacl validation)
+
+aif-ops:Operator       a aif-ops:Actor ; rdfs:label "Operator" .
+aif-ops:Technician     a aif-ops:Actor ; rdfs:label "Technician" .
+aif-ops:SafetyOfficer  a aif-ops:Actor ; rdfs:label "Safety Officer" .
+aif-ops:SystemAutomation a aif-ops:Actor ; rdfs:label "System Automation" .
+
 # Equipment instance
 
 ex:CDU_A1 a aif-ops:Coolant_Distribution_Unit ;
@@ -79,7 +86,7 @@ ex:IL_FlowPermissive a aif-ops:Interlock ;
 
 ex:Action_StartCDU_A1 a aif-ops:ManualAction ;
     rdfs:label "Start CDU A1 from control panel" ;
-    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 1 . # placeholder required by Action_Shape; see L5 in LIMITATIONS.md
 
 # Isolation procedure
@@ -97,19 +104,18 @@ ex:Seq_Isolation a aif-ops:Sequence ;
 
 ex:Action_NotifyOps a aif-ops:ManualAction ;
     rdfs:label "Notify operations center before isolation" ;
-    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 1 .
 
 ex:Action_CloseSupplyValve a aif-ops:ManualAction ;
     rdfs:label "Close CDU A1 supply shutoff valve" ;
-    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 2 .
 
 ex:Action_CloseReturnValve a aif-ops:ManualAction ;
     rdfs:label "Close CDU A1 return shutoff valve" ;
-    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:performedBy aif-ops:Operator ;
     aif-ops:stepOrder 3 .
 
-# Actor
-
-ex:Role_DataCenterOperator rdfs:label "Data Center Operator" .
+# Actor roles are named individuals declared in aif_ops.ttl (aif-ops:Operator, etc.)
+# No local actor declaration needed.

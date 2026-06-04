@@ -146,6 +146,22 @@ aif-ops:CommissioningStep a owl:Class ;
     rdfs:label "Commissioning Step" ;
     rdfs:comment "A numbered step in a commissioning procedure with explicit pass and fail criteria." .
 
+aif-ops:Actor a owl:Class ;
+    rdfs:label "Actor" ;
+    rdfs:comment "A role authorized to perform or approve actions within a procedure." .
+
+aif-ops:Operator a aif-ops:Actor ;
+    rdfs:label "Operator" .
+
+aif-ops:Technician a aif-ops:Actor ;
+    rdfs:label "Technician" .
+
+aif-ops:SafetyOfficer a aif-ops:Actor ;
+    rdfs:label "Safety Officer" .
+
+aif-ops:SystemAutomation a aif-ops:Actor ;
+    rdfs:label "System Automation" .
+
 # -----------------------------------------------------------------------
 # Object properties
 # -----------------------------------------------------------------------
@@ -191,15 +207,38 @@ aif-ops:hasAction a owl:ObjectProperty ;
     rdfs:range aif-ops:Action ;
     rdfs:label "has action" .
 
-aif-ops:hasActor a owl:ObjectProperty ;
+aif-ops:performedBy a owl:ObjectProperty ;
     rdfs:domain aif-ops:Action ;
-    rdfs:label "has actor" .
+    rdfs:range aif-ops:Actor ;
+    rdfs:label "performed by" .
+
+aif-ops:approvedBy a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Procedure ;
+    rdfs:range aif-ops:Actor ;
+    rdfs:label "approved by" .
+
+aif-ops:authorizedEmployee a owl:ObjectProperty ;
+    rdfs:domain aif-ops:LockoutTagoutStep ;
+    rdfs:range aif-ops:Actor ;
+    rdfs:label "authorized employee" .
 
 aif-ops:stepOrder a owl:DatatypeProperty ;
     rdfs:domain aif-ops:Action ;
     rdfs:range xsd:integer ;
     rdfs:label "step order" ;
     rdfs:comment "Integer position of this Action within its parent Sequence. 1-indexed." .
+
+aif-ops:verb a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:Action ;
+    rdfs:range xsd:string ;
+    rdfs:label "verb" ;
+    rdfs:comment "Closed ten-verb vocabulary: Start, Stop, Open, Close, Set, Reset, Wait, Compare, Jump, Verify." .
+
+aif-ops:on_failure a owl:ObjectProperty ;
+    rdfs:domain aif-ops:Action ;
+    rdfs:range aif-ops:Action ;
+    rdfs:label "on failure" ;
+    rdfs:comment "The Action to branch to if this Action fails, supporting conditional fault branches within a Sequence." .
 
 aif-ops:hasOperatingMode a owl:ObjectProperty ;
     rdfs:domain brick:Equipment ;
@@ -210,6 +249,18 @@ aif-ops:transitionsTo a owl:ObjectProperty ;
     rdfs:domain aif-ops:OperatingMode ;
     rdfs:range aif-ops:OperatingMode ;
     rdfs:label "transitions to" .
+
+aif-ops:entry_conditions a owl:ObjectProperty ;
+    rdfs:domain aif-ops:OperatingMode ;
+    rdfs:range brick:Point ;
+    rdfs:label "entry conditions" ;
+    rdfs:comment "Sensor point(s) in the Brick graph that must be satisfied to enter this operating mode." .
+
+aif-ops:exit_conditions a owl:ObjectProperty ;
+    rdfs:domain aif-ops:OperatingMode ;
+    rdfs:range brick:Point ;
+    rdfs:label "exit conditions" ;
+    rdfs:comment "Sensor point(s) in the Brick graph that must be satisfied to exit this operating mode." .
 
 aif-ops:triggers a owl:ObjectProperty ;
     rdfs:domain aif-ops:Event ;
@@ -228,6 +279,12 @@ aif-ops:requires a owl:ObjectProperty ;
 aif-ops:prohibits a owl:ObjectProperty ;
     rdfs:domain aif-ops:Interlock ;
     rdfs:label "prohibits" .
+
+aif-ops:hard_or_soft a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:Interlock ;
+    rdfs:range xsd:string ;
+    rdfs:label "hard or soft" ;
+    rdfs:comment "Value is 'hard' (cannot be overridden by any Actor) or 'soft' (can be bypassed by an authorized Actor)." .
 
 aif-ops:hasIsolationProcedure a owl:ObjectProperty ;
     rdfs:domain aif-ops:IsolationPoint ;
@@ -280,3 +337,7 @@ aif-ops:hasFailCriteria a owl:DatatypeProperty ;
 aif-ops:hasSource a owl:AnnotationProperty ;
     rdfs:label "has source" ;
     rdfs:comment "Annotation citing the source document, section, and page for a resource or fact. Used as a direct property on resource nodes in the instance graph. For per-triple provenance at the statement level, the RDF-star quoted-triple pattern applies; for richer derivation metadata (pipeline run, agent, timestamp), W3C PROV-O is the fallback." .
+
+aif-ops:sourceKind a owl:AnnotationProperty ;
+    rdfs:label "source kind" ;
+    rdfs:comment "Classifies the authority of a source citation: 'normative' (regulatory, non-overridable), 'vendor_default' (factory-shipped, site-configurable), 'site_setting' (facility-configured value), or 'sme_confirmed' (reviewed and signed off by a subject-matter expert)." .

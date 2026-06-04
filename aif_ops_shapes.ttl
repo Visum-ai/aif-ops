@@ -2,6 +2,7 @@
 @prefix aif-ops:        <https://visum.ai/ns/aif-ops#> .
 @prefix aif-ops-shapes: <https://visum.ai/ns/aif-ops-shapes#> .
 @prefix brick:          <https://brickschema.org/schema/Brick#> .
+@prefix rdfs:           <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:            <http://www.w3.org/2001/XMLSchema#> .
 
 # -----------------------------------------------------------------------
@@ -57,7 +58,7 @@ aif-ops-shapes:CDU_Shape a sh:NodeShape ;
     ] .
 
 # -----------------------------------------------------------------------
-# Section 5.2: Operational entity class shapes (all 11 classes)
+# Section 5.2: Operational entity class shapes (all 12 classes)
 # -----------------------------------------------------------------------
 
 # Procedure: must reference at least one equipment instance and at least one sequence
@@ -72,6 +73,12 @@ aif-ops-shapes:Procedure_Shape a sh:NodeShape ;
         sh:path aif-ops:hasSequence ;
         sh:minCount 1 ;
         sh:class aif-ops:Sequence ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:approvedBy ;
+        sh:minCount 0 ;
+        sh:class aif-ops:Actor ;
+        sh:message "approvedBy must reference an Actor." ;
     ] .
 
 # Sequence: must reference at least one ordered Action
@@ -83,14 +90,14 @@ aif-ops-shapes:Sequence_Shape a sh:NodeShape ;
         sh:class aif-ops:Action ;
     ] .
 
-# Action: must declare its actor (manual or automated) and its position in the sequence
+# Action: must declare its actor and its position in the sequence
 aif-ops-shapes:Action_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:Action ;
     sh:property [
-        sh:path aif-ops:hasActor ;
+        sh:path aif-ops:performedBy ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:nodeKind sh:IRI ;
+        sh:class aif-ops:Actor ;
     ] ;
     sh:property [
         sh:path aif-ops:stepOrder ;
@@ -99,19 +106,44 @@ aif-ops-shapes:Action_Shape a sh:NodeShape ;
         sh:datatype xsd:integer ;
         sh:minInclusive 1 ;
         sh:message "Every action must declare its 1-indexed integer position in the sequence." ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:verb ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "Start" "Stop" "Open" "Close" "Set" "Reset" "Wait" "Compare" "Jump" "Verify" ) ;
+        sh:message "verb must be one of: Start, Stop, Open, Close, Set, Reset, Wait, Compare, Jump, Verify." ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:on_failure ;
+        sh:maxCount 1 ;
+        sh:class aif-ops:Action ;
+        sh:message "on_failure must point to exactly one Action node." ;
     ] .
 # NOTE: uniqueness and contiguity of stepOrder values across all actions in a given
 # Sequence cannot be expressed in SHACL Core. Duplicate or gapped orderings will not
 # produce a validation failure. Full ordering integrity requires SHACL-SPARQL (deferred).
 
-# OperatingMode: if a transition exists, it must point at another OperatingMode
-# (sh:minCount 0 because terminal modes such as Shutdown-fault have no outgoing transition)
+# OperatingMode: if a transition exists, it must point at another OperatingMode;
+# entry/exit conditions, if present, must reference Brick sensor points
+# (sh:minCount 0 on all because terminal modes have no outgoing transition and
+# not every mode has sensor-point conditions documented in the source)
 aif-ops-shapes:OperatingMode_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:OperatingMode ;
     sh:property [
         sh:path aif-ops:transitionsTo ;
         sh:minCount 0 ;
         sh:class aif-ops:OperatingMode ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:entry_conditions ;
+        sh:minCount 0 ;
+        sh:class brick:Point ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:exit_conditions ;
+        sh:minCount 0 ;
+        sh:class brick:Point ;
     ] .
 
 # Event: if it triggers anything, that target must be a Procedure
@@ -124,13 +156,21 @@ aif-ops-shapes:Event_Shape a sh:NodeShape ;
         sh:class aif-ops:Procedure ;
     ] .
 
-# Interlock: must gate at least one Action
+# Interlock: must gate at least one Action; hard_or_soft, if present, must be 'hard' or 'soft'
 aif-ops-shapes:Interlock_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:Interlock ;
     sh:property [
         sh:path aif-ops:gatesAction ;
         sh:minCount 1 ;
         sh:class aif-ops:Action ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:hard_or_soft ;
+        sh:minCount 0 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "hard" "soft" ) ;
+        sh:message "hard_or_soft must be 'hard' or 'soft'." ;
     ] .
 
 # FailureMode: must reference detection plus mitigation
@@ -187,4 +227,32 @@ aif-ops-shapes:LockoutTagoutStep_Shape a sh:NodeShape ;
         sh:path aif-ops:partOfProcedure ;
         sh:minCount 1 ;
         sh:class aif-ops:Procedure ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:authorizedEmployee ;
+        sh:minCount 0 ;
+        sh:class aif-ops:Actor ;
+        sh:message "authorizedEmployee must reference an Actor." ;
+    ] .
+
+# Actor: must have a label (the four named individuals in the ontology satisfy this;
+# site-defined role extensions must also carry a label)
+aif-ops-shapes:Actor_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:Actor ;
+    sh:property [
+        sh:path rdfs:label ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:Literal ;
+        sh:message "Every Actor must have a label." ;
+    ] .
+
+# Cross-cutting: wherever sourceKind is asserted, it must use the closed vocabulary
+aif-ops-shapes:SourceKind_Shape a sh:NodeShape ;
+    sh:targetSubjectsOf aif-ops:sourceKind ;
+    sh:property [
+        sh:path aif-ops:sourceKind ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "normative" "vendor_default" "site_setting" "sme_confirmed" ) ;
+        sh:message "sourceKind must be one of: normative, vendor_default, site_setting, sme_confirmed." ;
     ] .
