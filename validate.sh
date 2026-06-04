@@ -8,9 +8,9 @@ if [[ -z "$INSTANCE" ]]; then
   exit 1
 fi
 
-[[ "$INSTANCE" = /* ]] || INSTANCE="$PWD/$INSTANCE"
-
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+[[ "$INSTANCE" = /* ]] || INSTANCE="$DIR/$INSTANCE"
 
 if [ -x "$DIR/.venv/bin/pyshacl" ]; then
   PYSHACL_BIN="$DIR/.venv/bin/pyshacl"
