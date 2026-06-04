@@ -9,8 +9,10 @@
 ex:CDU_A1 a aif-ops:Coolant_Distribution_Unit ;
     rdfs:label "Vertiv CDU100 — Row A, Unit 1" ;
     brick:hasPoint ex:LeakSensor_A1 ;
+    brick:hasPoint ex:TempSensor_Supply_A1 ;
     brick:feeds ex:ColdPlate_Rack01, ex:ColdPlate_Rack02 ;
     aif-ops:isIsolatedBy ex:IsoPoint_SupplyValve_A1 ;
+    aif-ops:isIsolatedBy ex:IsoPoint_ReturnValve_A1 ;
     aif-ops:hasFailureMode ex:FM_CoolantLeak ;
     aif-ops:hasMaintenanceTask ex:MT_FilterInspection ;
     aif-ops:hasOperatingMode ex:Mode_Online, ex:Mode_Standby ;
@@ -32,10 +34,14 @@ ex:ColdPlate_Rack01 a aif-ops:Cold_Plate ;
 ex:ColdPlate_Rack02 a aif-ops:Cold_Plate ;
     rdfs:label "Cold plate — Rack 02" .
 
-# Isolation point
+# Isolation points
 
 ex:IsoPoint_SupplyValve_A1 a aif-ops:IsolationPoint ;
     rdfs:label "Supply shutoff valve — CDU A1" ;
+    aif-ops:hasIsolationProcedure ex:Proc_CDU_Isolation .
+
+ex:IsoPoint_ReturnValve_A1 a aif-ops:IsolationPoint ;
+    rdfs:label "Return shutoff valve — CDU A1" ;
     aif-ops:hasIsolationProcedure ex:Proc_CDU_Isolation .
 
 # Failure mode
@@ -65,7 +71,12 @@ ex:Mode_Standby a aif-ops:OperatingMode ;
 
 ex:IL_FlowPermissive a aif-ops:Interlock ;
     rdfs:label "Flow permissive interlock — CDU A1" ;
-    aif-ops:gatesAction ex:Action_OpenSupplyValve .
+    aif-ops:gatesAction ex:Action_StartCDU_A1 .
+
+ex:Action_StartCDU_A1 a aif-ops:ManualAction ;
+    rdfs:label "Start CDU A1 from control panel" ;
+    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:stepOrder 1 . # placeholder required by Action_Shape; see L5 in LIMITATIONS.md
 
 # Isolation procedure
 
