@@ -8,6 +8,8 @@ if [[ -z "$INSTANCE" ]]; then
   exit 1
 fi
 
+[[ "$INSTANCE" = /* ]] || INSTANCE="$PWD/$INSTANCE"
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -x "$DIR/.venv/bin/pyshacl" ]; then
