@@ -17,7 +17,7 @@ Entries are grouped into two categories:
 
 **Consequence:** Instance graphs that record individual alarm events cannot distinguish a recurring event type from a single firing without extending the model.
 
-**Resolution path:** Introduce `aif-ops:EventType` and `aif-ops:EventOccurrence` as a type/occurrence split, following the pattern used by PROV-O (`prov:Activity` vs. `prov:ActivityType`) or FMEA ontologies.
+**Resolution path:** Introduce `aif-ops:EventType` and `aif-ops:EventOccurrence` as a type/occurrence split, following the type/occurrence pattern common in event-driven ontologies.
 
 ---
 
