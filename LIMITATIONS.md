@@ -55,7 +55,7 @@ Both `IsolationPoint` and `Interlock` gate equipment actions. `IsolationPoint` i
 
 `aif-ops:GPU_Rack` is placed under `aif-ops:Compute_Equipment`, which is declared as a direct subclass of `brick:Equipment`. An alternative placement would be under `brick:ICT_Equipment` (a Brick 1.4.4 class), which would make GPU racks visible to queries over the existing Brick equipment hierarchy without requiring knowledge of the aif-ops namespace.
 
-**Consequence:** SPARQL queries written against the standard Brick hierarchy will not return `GPU_Rack` instances unless they also import aif-ops class declarations.
+**Consequence:** SPARQL queries targeting the `brick:ICT_Equipment` subtree specifically will not return `GPU_Rack` instances. Queries over `brick:Equipment` (the direct parent via `aif-ops:Compute_Equipment`) will include `GPU_Rack` instances once the aif-ops ontology is loaded.
 
 **Resolution path:** Deferred pending review of Brick's `ICT_Equipment` subtree.
 
