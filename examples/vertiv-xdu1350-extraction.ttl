@@ -111,7 +111,7 @@ xdu:Event_A44 a aif-ops:Event ;
 xdu:Action_StartUnit a aif-ops:ManualAction ;
     rdfs:label "Press Start/Stop ON button on Home Screen to start CDU" ;
     aif-ops:hasActor xdu:Operator ;
-    aif-ops:stepOrder 1 ;
+    aif-ops:stepOrder 1 ; # placeholder required by Action_Shape; see L5 in LIMITATIONS.md
     aif-ops:hasSource "sl-71310 §4.3 Automatic Operation p.39" .
 
 # A27 Pump Low Flow: Type 1 latching. If pumps do not reach flow/DP setpoint
