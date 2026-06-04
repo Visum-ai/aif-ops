@@ -1,0 +1,106 @@
+@prefix aif-ops: <https://visum.ai/ns/aif-ops#> .
+@prefix brick:   <https://brickschema.org/schema/Brick#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex:      <https://example.org/dc1#> .
+
+# Equipment instance
+
+ex:CDU_A1 a aif-ops:Coolant_Distribution_Unit ;
+    rdfs:label "Vertiv CDU100 — Row A, Unit 1" ;
+    brick:hasPoint ex:LeakSensor_A1 ;
+    brick:feeds ex:ColdPlate_Rack01, ex:ColdPlate_Rack02 ;
+    aif-ops:isIsolatedBy ex:IsoPoint_SupplyValve_A1 ;
+    aif-ops:hasFailureMode ex:FM_CoolantLeak ;
+    aif-ops:hasMaintenanceTask ex:MT_FilterInspection ;
+    aif-ops:hasOperatingMode ex:Mode_Online, ex:Mode_Standby ;
+    aif-ops:hasInterlock ex:IL_FlowPermissive .
+
+# Brick points
+
+ex:LeakSensor_A1 a brick:Leak_Detection_Sensor ;
+    rdfs:label "Leak detection sensor under CDU A1" .
+
+ex:TempSensor_Supply_A1 a brick:Point ;
+    rdfs:label "Supply temperature sensor CDU A1" .
+
+# Downstream equipment
+
+ex:ColdPlate_Rack01 a aif-ops:Cold_Plate ;
+    rdfs:label "Cold plate — Rack 01" .
+
+ex:ColdPlate_Rack02 a aif-ops:Cold_Plate ;
+    rdfs:label "Cold plate — Rack 02" .
+
+# Isolation point
+
+ex:IsoPoint_SupplyValve_A1 a aif-ops:IsolationPoint ;
+    rdfs:label "Supply shutoff valve — CDU A1" ;
+    aif-ops:hasIsolationProcedure ex:Proc_CDU_Isolation .
+
+# Failure mode
+
+ex:FM_CoolantLeak a aif-ops:FailureMode ;
+    rdfs:label "Coolant leak at CDU supply fitting" ;
+    aif-ops:hasDetectionSignature ex:LeakSensor_A1 ;
+    aif-ops:mitigatedBy ex:Proc_CDU_Isolation .
+
+# Maintenance task
+
+ex:MT_FilterInspection a aif-ops:MaintenanceTask ;
+    rdfs:label "Inspect and replace strainer filter" ;
+    aif-ops:recursEvery "P3M"^^xsd:duration .
+
+# Operating modes
+
+ex:Mode_Online a aif-ops:OperatingMode ;
+    rdfs:label "Online" ;
+    aif-ops:transitionsTo ex:Mode_Standby .
+
+ex:Mode_Standby a aif-ops:OperatingMode ;
+    rdfs:label "Standby" ;
+    aif-ops:transitionsTo ex:Mode_Online .
+
+# Interlock
+
+ex:IL_FlowPermissive a aif-ops:Interlock ;
+    rdfs:label "Flow permissive interlock — CDU A1" ;
+    aif-ops:gatesAction ex:Action_OpenSupplyValve .
+
+# Isolation procedure
+
+ex:Proc_CDU_Isolation a aif-ops:MOP ;
+    rdfs:label "CDU A1 isolation procedure" ;
+    aif-ops:executesOn ex:CDU_A1 ;
+    aif-ops:hasSequence ex:Seq_Isolation .
+
+ex:Seq_Isolation a aif-ops:Sequence ;
+    rdfs:label "Isolation sequence" ;
+    aif-ops:hasAction ex:Action_NotifyOps,
+                      ex:Action_CloseSupplyValve,
+                      ex:Action_CloseReturnValve,
+                      ex:Action_OpenSupplyValve .
+
+ex:Action_NotifyOps a aif-ops:ManualAction ;
+    rdfs:label "Notify operations center before isolation" ;
+    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:stepOrder 1 .
+
+ex:Action_CloseSupplyValve a aif-ops:ManualAction ;
+    rdfs:label "Close CDU A1 supply shutoff valve" ;
+    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:stepOrder 2 .
+
+ex:Action_CloseReturnValve a aif-ops:ManualAction ;
+    rdfs:label "Close CDU A1 return shutoff valve" ;
+    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:stepOrder 3 .
+
+ex:Action_OpenSupplyValve a aif-ops:ManualAction ;
+    rdfs:label "Open CDU A1 supply valve to restore flow" ;
+    aif-ops:hasActor ex:Role_DataCenterOperator ;
+    aif-ops:stepOrder 4 .
+
+# Actor
+
+ex:Role_DataCenterOperator rdfs:label "Data Center Operator" .
