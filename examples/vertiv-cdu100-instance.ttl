@@ -1,3 +1,7 @@
+# Synthetic example — uses the Vertiv CDU100 as a reference point.
+# This graph is hand-authored to exercise aif-ops schema classes and properties.
+# It is not extracted from a Vertiv document and carries no source citations.
+
 @prefix aif-ops: <https://visum.ai/ns/aif-ops#> .
 @prefix brick:   <https://brickschema.org/schema/Brick#> .
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
