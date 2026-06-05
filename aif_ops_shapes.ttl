@@ -187,14 +187,35 @@ aif-ops-shapes:FailureMode_Shape a sh:NodeShape ;
         sh:class aif-ops:Procedure ;
     ] .
 
-# MaintenanceTask: must declare schedule as an ISO 8601 duration
+# MaintenanceTask (base): must be typed as exactly one concrete subclass.
+# Direct instances of the abstract base class escape subclass validation;
+# this shape enforces that every MaintenanceTask is either Scheduled or OnCondition.
 aif-ops-shapes:MaintenanceTask_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:MaintenanceTask ;
+    sh:or (
+        [ sh:class aif-ops:ScheduledMaintenanceTask ]
+        [ sh:class aif-ops:OnConditionMaintenanceTask ]
+    ) ;
+    sh:message "A MaintenanceTask must be typed as ScheduledMaintenanceTask or OnConditionMaintenanceTask — the base class is abstract." .
+
+# ScheduledMaintenanceTask: must declare a fixed ISO 8601 recurrence interval
+aif-ops-shapes:ScheduledMaintenanceTask_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:ScheduledMaintenanceTask ;
     sh:property [
         sh:path aif-ops:recursEvery ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
         sh:datatype xsd:duration ;
+    ] .
+
+# OnConditionMaintenanceTask: must describe the condition that triggers service
+aif-ops-shapes:OnConditionMaintenanceTask_Shape a sh:NodeShape ;
+    sh:targetClass aif-ops:OnConditionMaintenanceTask ;
+    sh:property [
+        sh:path aif-ops:hasTriggerCondition ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:Literal ;
+        sh:message "An on-condition maintenance task must describe its trigger condition." ;
     ] .
 
 # CommissioningStep: must declare pass and fail criteria as literals

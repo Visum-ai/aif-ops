@@ -20,6 +20,9 @@
 brick:HVAC_Equipment       rdfs:subClassOf brick:Equipment .
 brick:Electrical_Equipment rdfs:subClassOf brick:Equipment .
 brick:Leak_Detection_Sensor rdfs:subClassOf brick:Point .
+brick:Temperature_Sensor    rdfs:subClassOf brick:Point .
+brick:Pressure_Sensor       rdfs:subClassOf brick:Point .
+brick:Flow_Sensor           rdfs:subClassOf brick:Point .
 
 # -----------------------------------------------------------------------
 # Equipment class additions
@@ -140,7 +143,18 @@ aif-ops:VerificationAction a owl:Class ;
 
 aif-ops:MaintenanceTask a owl:Class ;
     rdfs:label "Maintenance Task" ;
-    rdfs:comment "A scheduled maintenance activity attached to equipment with an explicit recurrence interval." .
+    rdfs:comment "A maintenance activity attached to equipment. Use ScheduledMaintenanceTask for fixed-interval tasks or OnConditionMaintenanceTask for condition-triggered tasks." .
+
+aif-ops:ScheduledMaintenanceTask a owl:Class ;
+    rdfs:subClassOf aif-ops:MaintenanceTask ;
+    rdfs:label "Scheduled Maintenance Task" ;
+    rdfs:comment "A maintenance task that recurs on a fixed ISO 8601 interval (e.g., quarterly filter inspection)." .
+
+aif-ops:OnConditionMaintenanceTask a owl:Class ;
+    rdfs:subClassOf aif-ops:MaintenanceTask ;
+    owl:disjointWith aif-ops:ScheduledMaintenanceTask ;
+    rdfs:label "On-Condition Maintenance Task" ;
+    rdfs:comment "A maintenance task performed when a monitored condition is exceeded rather than on a fixed schedule (e.g., replace filter on high differential pressure)." .
 
 aif-ops:CommissioningStep a owl:Class ;
     rdfs:label "Commissioning Step" ;
@@ -307,9 +321,15 @@ aif-ops:hasMaintenanceTask a owl:ObjectProperty ;
     rdfs:label "has maintenance task" .
 
 aif-ops:recursEvery a owl:DatatypeProperty ;
-    rdfs:domain aif-ops:MaintenanceTask ;
+    rdfs:domain aif-ops:ScheduledMaintenanceTask ;
     rdfs:range xsd:duration ;
     rdfs:label "recurs every" .
+
+aif-ops:hasTriggerCondition a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:OnConditionMaintenanceTask ;
+    rdfs:range rdfs:Literal ;
+    rdfs:label "has trigger condition" ;
+    rdfs:comment "Description of the measurable condition (sensor threshold, inspection result, or alarm) that initiates this maintenance task." .
 
 aif-ops:requiresPart a owl:ObjectProperty ;
     rdfs:domain aif-ops:MaintenanceTask ;

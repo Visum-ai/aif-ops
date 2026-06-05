@@ -10,14 +10,14 @@ Developed for the broader community working on operational semantics for AI fact
 
 **Operational entity classes:** Procedures (MOPs, SOPs, EOPs), failure modes, isolation points, interlocks, lockout/tagout steps, operating modes, events, sequences, actions, actors, maintenance tasks, and commissioning steps.
 
-**Properties:** 26 object properties, 6 datatype properties, and 2 annotation properties connecting equipment instances to their operational metadata.
+**Properties:** 26 object properties, 7 datatype properties, and 2 annotation properties connecting equipment instances to their operational metadata.
 
 ## Files
 
 | File | Description |
 |------|-------------|
 | `aif_ops.ttl` | OWL ontology: class declarations, property definitions, and Brick hierarchy stubs |
-| `aif_ops_shapes.ttl` | SHACL shapes: 14 node shapes (1 CDU equipment shape + 12 operational entity class shapes + 1 cross-cutting annotation shape) |
+| `aif_ops_shapes.ttl` | SHACL shapes: 16 node shapes (1 CDU equipment shape + 14 operational entity class shapes + 1 cross-cutting annotation shape) |
 
 ## Namespace
 

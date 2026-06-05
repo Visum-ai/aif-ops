@@ -291,10 +291,10 @@ xdu:Action_ClearA37Alarm a aif-ops:ManualAction ;
 
 
 ###############################################################################
-# 10. MAINTENANCE TASK  [class: aif-ops:MaintenanceTask]
+# 10. MAINTENANCE TASK  [class: aif-ops:ScheduledMaintenanceTask]
 ###############################################################################
 
-xdu:MT_FilterInspection_3month a aif-ops:MaintenanceTask ;
+xdu:MT_FilterInspection_3month a aif-ops:ScheduledMaintenanceTask ;
     rdfs:label "3-Month Planned Preventative Maintenance: Secondary Filter Inspection" ;
     aif-ops:recursEvery "P3M"^^xsd:duration ;
     aif-ops:hasSource "sl-71310 §5.3 Planned Preventative Maintenance p.71: planned maintenance every 3 months; includes checking secondary filter differential pressure and filter service if required" .

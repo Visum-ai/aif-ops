@@ -64,7 +64,7 @@ ex:FM_CoolantLeak a aif-ops:FailureMode ;
 
 # Maintenance task
 
-ex:MT_FilterInspection a aif-ops:MaintenanceTask ;
+ex:MT_FilterInspection a aif-ops:ScheduledMaintenanceTask ;
     rdfs:label "Inspect and replace strainer filter" ;
     aif-ops:recursEvery "P3M"^^xsd:duration .
 
