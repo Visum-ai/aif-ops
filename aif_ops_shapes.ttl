@@ -81,13 +81,27 @@ aif-ops-shapes:Procedure_Shape a sh:NodeShape ;
         sh:message "approvedBy must reference an Actor." ;
     ] .
 
-# Sequence: must reference at least one ordered Action
+# Sequence: must reference at least one ordered Action; optional phase and ordering
 aif-ops-shapes:Sequence_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:Sequence ;
     sh:property [
         sh:path aif-ops:hasAction ;
         sh:minCount 1 ;
         sh:class aif-ops:Action ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:sequenceOrder ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 1 ;
+        sh:message "sequenceOrder, if present, must be a positive integer." ;
+    ] ;
+    sh:property [
+        sh:path aif-ops:sequencePhase ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:in ( "pre" "core" "post" ) ;
+        sh:message "sequencePhase must be one of: pre, core, post." ;
     ] .
 
 # Action: must declare its actor and its position in the sequence

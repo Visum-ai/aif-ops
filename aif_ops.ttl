@@ -123,7 +123,7 @@ aif-ops:Event a owl:Class ;
 
 aif-ops:Sequence a owl:Class ;
     rdfs:label "Sequence" ;
-    rdfs:comment "An ordered set of Actions within a Procedure." .
+    rdfs:comment "An ordered set of Actions within a Procedure. May be canonical (shared across procedures via a stable IRI) or procedure-local." .
 
 aif-ops:Action a owl:Class ;
     rdfs:label "Action" ;
@@ -215,6 +215,18 @@ aif-ops:hasSequence a owl:ObjectProperty ;
     rdfs:domain aif-ops:Procedure ;
     rdfs:range aif-ops:Sequence ;
     rdfs:label "has sequence" .
+
+aif-ops:sequenceOrder a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:Sequence ;
+    rdfs:range xsd:integer ;
+    rdfs:label "sequence order" ;
+    rdfs:comment "Integer position of this Sequence within its parent Procedure. 1-indexed. Enables ordered rendering of Pre/Core/Post phases." .
+
+aif-ops:sequencePhase a owl:DatatypeProperty ;
+    rdfs:domain aif-ops:Sequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "sequence phase" ;
+    rdfs:comment "Closed vocabulary: 'pre' (isolation/LOTO/preparation), 'core' (maintenance or verification steps), 'post' (de-isolation/functional-test/return-to-service). Absent means the procedure is not split into phases." .
 
 aif-ops:hasAction a owl:ObjectProperty ;
     rdfs:domain aif-ops:Sequence ;
