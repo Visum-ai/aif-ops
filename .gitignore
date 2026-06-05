@@ -1,3 +1,28 @@
 .venv/
 __pycache__/
 *.pyc
+CLAUDE.md
+AGENTS.md
+
+# Sensitive files — never commit
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+id_rsa
+id_ed25519
+*.credentials
+credentials.json
+secrets.json
+service-account*.json
+
+# Binary documents — not for this public ontology repo
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+*.doc
+*.xls
