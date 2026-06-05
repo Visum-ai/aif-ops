@@ -116,6 +116,8 @@ Every operational field the extension proposes is mapped against current Brick c
 
 | Predicate | Domain | Range | Purpose |
 |---|---|---|---|
+| `aif-ops:sequenceOrder` | Sequence | xsd:integer | 1-indexed position of this Sequence within its parent Procedure |
+| `aif-ops:sequencePhase` | Sequence | xsd:string | Closed vocabulary: `pre` (isolation/LOTO/preparation), `core` (maintenance/verification), `post` (de-isolation/return-to-service). Absent means the procedure is not split into phases |
 | `aif-ops:stepOrder` | Action | xsd:integer | 1-indexed position within parent Sequence |
 | `aif-ops:verb` | Action | xsd:string | Closed vocabulary: Start, Stop, Open, Close, Set, Reset, Wait, Compare, Jump, Verify |
 | `aif-ops:hard_or_soft` | Interlock | xsd:string | "hard" (cannot be overridden) or "soft" (can be bypassed by authorized Actor) |
@@ -245,10 +247,14 @@ aif-ops-shapes:Procedure_Shape a sh:NodeShape ;
     sh:property [ sh:path aif-ops:hasSequence ; sh:minCount 1 ; sh:class aif-ops:Sequence ] ;
     sh:property [ sh:path aif-ops:approvedBy ; sh:minCount 0 ; sh:class aif-ops:Actor ] .
 
-# Sequence: must contain at least one Action
+# Sequence: must contain at least one Action; optional phase and ordering
 aif-ops-shapes:Sequence_Shape a sh:NodeShape ;
     sh:targetClass aif-ops:Sequence ;
-    sh:property [ sh:path aif-ops:hasAction ; sh:minCount 1 ; sh:class aif-ops:Action ] .
+    sh:property [ sh:path aif-ops:hasAction ; sh:minCount 1 ; sh:class aif-ops:Action ] ;
+    sh:property [ sh:path aif-ops:sequenceOrder ; sh:maxCount 1 ; sh:datatype xsd:integer ;
+                  sh:minInclusive 1 ] ;
+    sh:property [ sh:path aif-ops:sequencePhase ; sh:maxCount 1 ; sh:datatype xsd:string ;
+                  sh:in ( "pre" "core" "post" ) ] .
 
 # Action: must declare actor, step position, and optional verb/failure branch
 aif-ops-shapes:Action_Shape a sh:NodeShape ;

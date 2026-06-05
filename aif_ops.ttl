@@ -123,7 +123,7 @@ aif-ops:Event a owl:Class ;
 
 aif-ops:Sequence a owl:Class ;
     rdfs:label "Sequence" ;
-    rdfs:comment "An ordered set of Actions within a Procedure. May be canonical (shared across procedures via a stable IRI) or procedure-local." .
+    rdfs:comment "An ordered set of Actions within a Procedure." .
 
 aif-ops:Action a owl:Class ;
     rdfs:label "Action" ;
