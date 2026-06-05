@@ -108,3 +108,13 @@ Shapes target parent classes directly (`aif-ops:Procedure`, `aif-ops:Action`, `a
 **Consequence:** Instance graphs that model interlock permissive conditions as `Action` nodes without defining a full startup procedure pass validation. The XDU1350B extraction demonstrates this: `xdu:Action_StartUnit` is gated by two interlocks but belongs to no `Sequence`. The CDU100 example reproduces the same pattern with `ex:Action_StartCDU_A1`. Because `Action_Shape` simultaneously requires `stepOrder` on every `Action`, these standalone nodes must carry a `stepOrder` value that has no meaningful context — a placeholder forced by the shape, not a real procedure step.
 
 **Resolution path:** Two options, both expressible in SHACL Core: (1) add an inverse-path property shape to `Action_Shape` — `sh:path [ sh:inversePath aif-ops:hasAction ] ; sh:minCount 1 ; sh:class aif-ops:Sequence` — to require every `Action` to be a member of at least one `Sequence`; or (2) introduce a separate `aif-ops:PermissiveTarget` class for actions that exist solely as interlock gate targets, keeping `Action` strictly scoped to procedural steps. Option 1 is simpler but would break current instance graphs that use standalone actions as interlock gates. Option 2 requires a schema change and instance migration. Deferred pending broader community review.
+
+---
+
+### L6: Synthesized EOP procedures where the source has no documented EOP
+
+`examples/ocp-deschutes-extraction.ttl` models `deschutes:EOP_LeakResponse` as a six-step emergency procedure. The OCP Project Deschutes specification does not include a verbatim EOP; steps 2, 4, and 6 are inferred from referenced system capabilities (automated PLC alarm, isolation valve, bleed valve) rather than extracted from a written procedure.
+
+**Consequence:** The EOP is a reasonable operational inference rather than a verbatim extraction. It conforms to the schema and validates cleanly, but cannot be cited to a specific section of the source document for those three steps.
+
+**Resolution path:** If a verbatim EOP becomes available in OCP Project Deschutes documentation, replace the designed procedure with a direct extraction and update `aif-ops:hasSource` on each step to cite the verbatim passage. Until then, the instance graph should be treated as a schema exercise rather than an authoritative operational document.

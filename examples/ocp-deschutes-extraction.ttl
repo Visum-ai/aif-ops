@@ -1,0 +1,519 @@
+###############################################################################
+# OCP Project Deschutes — CDU hand-extraction
+#
+# Source: OCP Project Deschutes: Data Center Facilities, v0.8.0,
+#         Authors: Google, effective July 1, 2025.
+#         File: ocp-deschutes-cdu-spec-2025.pdf
+#         GCS: gs://visum-equipment-manuals-1767322178/equipment-manuals/cdu/
+#
+# Purpose: Third worked example for the aif-ops ontology, exercising 11 of the
+#          12 operational entity classes against an OCP hyperscaler CDU design
+#          specification.  OperatingMode is the only omitted class (no discrete
+#          named states documented in the design spec; see extraction plan §4.3).
+#          MaintenanceTask is covered via OnConditionMaintenanceTask (§13.3).
+#          Actor is exercised via deschutes:Technician and deschutes:PLC_ControlSystem.
+#
+# To validate with pyshacl (schema files at github.com/Visum-ai/aif-ops):
+#   pyshacl -s aif_ops_shapes.ttl -e aif_ops.ttl \
+#           -df turtle -f table path/to/ocp-deschutes-extraction.ttl
+###############################################################################
+
+@prefix aif-ops:    <https://visum.ai/ns/aif-ops#> .
+@prefix brick:      <https://brickschema.org/schema/Brick#> .
+@prefix owl:        <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:        <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix deschutes:  <https://visum.ai/instances/ocp-deschutes#> .
+
+
+###############################################################################
+# ACTORS  (aif-ops:Actor instances referenced by Action aif-ops:performedBy)
+###############################################################################
+
+deschutes:Technician a aif-ops:Actor ;
+    rdfs:label "On-site CDU technician" .
+
+deschutes:PLC_ControlSystem a aif-ops:Actor ;
+    rdfs:label "PLC-based CDU control system (Modbus/TCP over IPv4+IPv6)" .
+
+
+###############################################################################
+# 1. EQUIPMENT INSTANCE  [class: aif-ops:Coolant_Distribution_Unit]
+###############################################################################
+
+deschutes:CDU_1 a aif-ops:Coolant_Distribution_Unit ;
+    a brick:HVAC_Equipment ;
+    rdfs:label "OCP Project Deschutes 2 MW Coolant Distribution Unit (PECOS CDU)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §3.1 Technical Specification p.12 (2 MW thermal load, 500 GPM IT flow); §4.1 Overall Dimensions p.17 (65 in W x 93.1 in H x 47.2 in D, 6910 lbs wet)" .
+
+# Downstream load equipment — required by CDU_Shape brick:feeds qualified constraint.
+# Stub sourced from §18.9 (RDHx Details p.63) and §18.13 Fig 18.13.1 (CDU Placement p.67
+# showing 'Secondary Piping for rack cooling' connecting CDU to rack RDHx units).
+deschutes:RDHx_Rack a aif-ops:Rear_Door_Heat_Exchanger ;
+    rdfs:label "Rack-mounted Rear Door Heat Exchanger (rack cooling via secondary piping)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §18.9 RDHx Details p.63; §18.13 CDU Placement Fig 18.13.1 p.67" .
+
+deschutes:CDU_1 brick:feeds deschutes:RDHx_Rack .
+
+
+###############################################################################
+# 2. SENSORS / BRICK POINTS  [class: brick:Point subclasses]
+#    Source: §6.5 Sensors and Instrumentation table, p.25
+#    Seven sensors selected across three loops; loop identity captured in
+#    rdfs:label (canonical pair: Secondary/Technical Loop, Primary/Facility Loop).
+###############################################################################
+
+deschutes:Sensor_Tech_CDUOutput_Temp a brick:Temperature_Sensor ;
+    rdfs:label "CDU Output Temperature (Secondary/Technical Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: CDU Output Temperature, Loop=Technical" .
+
+deschutes:Sensor_Tech_CDUInput_Temp a brick:Temperature_Sensor ;
+    rdfs:label "CDU Input Temperature (Secondary/Technical Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: CDU Input Temperature, Loop=Technical" .
+
+deschutes:Sensor_Tech_CDUOutput_Pressure a brick:Pressure_Sensor ;
+    rdfs:label "CDU Output Pressure (Secondary/Technical Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: CDU Output Pressure, Loop=Technical" .
+
+deschutes:Sensor_Tech_FlowMeter a brick:Flow_Sensor ;
+    rdfs:label "Flow Meter - vortex or ultrasonic (Secondary/Technical Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: Flow Meter, Loop=Technical" .
+
+deschutes:Sensor_Primary_CDUInput_Temp a brick:Temperature_Sensor ;
+    rdfs:label "CDU Input Temperature (Primary/Facility Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: CDU Input Temperature, Loop=Primary" .
+
+deschutes:Sensor_Primary_CCV_Pressure a brick:Pressure_Sensor ;
+    rdfs:label "CCV Output Pressure (Primary/Facility Loop)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: CCV Output Pressure, Loop=Primary" .
+
+deschutes:Sensor_CDU_LeakRope a brick:Leak_Detection_Sensor ;
+    rdfs:label "Leak Detection Rope Sensor (3 zones, CDU level)" ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.5 Sensors and Instrumentation p.25: Leak Detection (rope, 3 zones), Loop=CDU; §3.2 item 10 p.13: Leak rope detection (detected through PLC, 3 zones)" .
+
+deschutes:CDU_1 brick:hasPoint deschutes:Sensor_Tech_CDUOutput_Temp ;
+    brick:hasPoint deschutes:Sensor_Tech_CDUInput_Temp ;
+    brick:hasPoint deschutes:Sensor_Tech_CDUOutput_Pressure ;
+    brick:hasPoint deschutes:Sensor_Tech_FlowMeter ;
+    brick:hasPoint deschutes:Sensor_Primary_CDUInput_Temp ;
+    brick:hasPoint deschutes:Sensor_Primary_CCV_Pressure ;
+    brick:hasPoint deschutes:Sensor_CDU_LeakRope .
+
+
+###############################################################################
+# 3. FAILURE MODE  [class: aif-ops:FailureMode]
+#    Only FM_CoolantLeak is modelled.  FM_MotorOvertemp is omitted: §6.5 has
+#    no motor temperature sensor, so no grounded brick:Point exists for the
+#    hasDetectionSignature constraint (see extraction plan §3.3).
+###############################################################################
+
+deschutes:FM_CoolantLeak a aif-ops:FailureMode ;
+    rdfs:label "Coolant Leak Detected via 3-Zone Rope Sensor" ;
+    aif-ops:hasDetectionSignature deschutes:Sensor_CDU_LeakRope ;
+    aif-ops:mitigatedBy deschutes:EOP_LeakResponse ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §3.2 item 10 p.13: Leak rope detection (detected through PLC, 3 zones); §6.7 Alarms for detected leaks p.26" .
+
+deschutes:CDU_1 aif-ops:hasFailureMode deschutes:FM_CoolantLeak .
+
+
+###############################################################################
+# 4. EVENTS  [class: aif-ops:Event]
+###############################################################################
+
+deschutes:Event_LeakDetected a aif-ops:Event ;
+    rdfs:label "Leak Detected PLC Alarm (any of 3 rope sensor zones)" ;
+    aif-ops:triggers deschutes:EOP_LeakResponse ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §6.7 Alarms for detected leaks p.26" .
+
+
+###############################################################################
+# 5. INTERLOCKS  [class: aif-ops:Interlock]
+#    Source: §13.1 p.41 (maintenance and hotswap requirements), §13.4 p.45
+#    Interlock gate targets defined in their respective procedure sections below;
+#    Action_FlowMeter_Unbolt is standalone (MOP_FlowMeterService deferred—
+#    §13.4 verbatim steps not extracted in this PR).
+###############################################################################
+
+deschutes:Interlock_HotswapFluidIsolation a aif-ops:Interlock ;
+    rdfs:label "Manual fluid isolation required before pump FRU hotswap/removal" ;
+    aif-ops:gatesAction deschutes:Action_PumpRemove ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.1 p.41: components that are replaceable during continuous normal operation must have appropriate interlocks to prevent: disruptive fluid pressure or flow conditions — manual stop valves, and/or check valves and/or leak-free disconnects" .
+
+deschutes:Interlock_FlowMeterShutdown a aif-ops:Interlock ;
+    rdfs:label "CDU must be powered off before flow meter service" ;
+    aif-ops:gatesAction deschutes:Action_FlowMeter_Unbolt ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.4 p.45" .
+
+deschutes:CDU_1 aif-ops:hasInterlock deschutes:Interlock_HotswapFluidIsolation ;
+    aif-ops:hasInterlock deschutes:Interlock_FlowMeterShutdown .
+
+# Standalone action gated by Interlock_FlowMeterShutdown.
+# Full MOP_FlowMeterService is deferred pending verbatim extraction of §13.4.
+deschutes:Action_FlowMeter_Unbolt a aif-ops:ManualAction ;
+    rdfs:label "Unbolt flow meter for service (CDU powered off)" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.4 p.45" .
+
+
+###############################################################################
+# 6. ISOLATION POINTS  [class: aif-ops:IsolationPoint]
+###############################################################################
+
+deschutes:IP_PumpSupplyValve a aif-ops:IsolationPoint ;
+    rdfs:label "Pump supply shut-off valve" ;
+    aif-ops:hasIsolationProcedure deschutes:MOP_PumpRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Pump Removal Step 1 p.42: Shut off supply valve" .
+
+deschutes:IP_FilterInletValve a aif-ops:IsolationPoint ;
+    rdfs:label "Filter inlet shut-off valve (Secondary/Technical loop)" ;
+    aif-ops:hasIsolationProcedure deschutes:MOP_FilterService ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Filter Removal Step 1 p.44: Shutoff filter inlet valve" .
+
+deschutes:IP_FilterOutletValve a aif-ops:IsolationPoint ;
+    rdfs:label "Filter outlet shut-off valve (Secondary/Technical loop)" ;
+    aif-ops:hasIsolationProcedure deschutes:MOP_FilterService ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Filter Removal Step 2 p.44: Shutoff filter outlet valve" .
+
+deschutes:IP_VFD_MainDisconnect a aif-ops:IsolationPoint ;
+    rdfs:label "VFD main disconnect (electrical isolation)" ;
+    aif-ops:hasIsolationProcedure deschutes:MOP_VFDRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 VFD Removal Step 1 p.46: Turn off main disconnect for VFD to be serviced" .
+
+# IP_FilterInletValve and IP_FilterOutletValve isolate only the filter branch
+# (the CDU continues running during filter service per §13.3) — they are not
+# CDU-level isolation points and are therefore not listed here.
+deschutes:CDU_1 aif-ops:isIsolatedBy deschutes:IP_PumpSupplyValve ;
+    aif-ops:isIsolatedBy deschutes:IP_VFD_MainDisconnect .
+
+
+###############################################################################
+# 7. LOCKOUT-TAGOUT STEPS  [class: aif-ops:LockoutTagoutStep]
+#    Source: §13.5 VFD Removal Steps 1-2, p.46 (verbatim):
+#    "1. Turn off main disconnect for VFD to be serviced.
+#     2. Open high voltage enclosure and ensure power to VFD is removed."
+###############################################################################
+
+deschutes:LOTO_VFD_Step1 a aif-ops:LockoutTagoutStep ;
+    rdfs:label "LOTO Step 1: Turn off main disconnect for VFD to be serviced" ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:partOfProcedure deschutes:MOP_VFDRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 VFD Removal Step 1 p.46" .
+
+deschutes:LOTO_VFD_Step2 a aif-ops:LockoutTagoutStep ;
+    rdfs:label "LOTO Step 2: Open high voltage enclosure and ensure power to VFD is removed" ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:partOfProcedure deschutes:MOP_VFDRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 VFD Removal Step 2 p.46" .
+
+
+###############################################################################
+# 8. EOP: COOLANT LEAK RESPONSE  [class: aif-ops:EOP]
+#    First worked-example use of aif-ops:AutomatedAction (Step 1, PLC alarm).
+#    Sources: §3.2 item 10 p.13; §6.7 p.26; §13.1 p.41; §13.2 Steps 1-2 p.42;
+#             §7.2.2 p.28 (pump enable/disable).
+###############################################################################
+
+deschutes:EOP_LeakResponse a aif-ops:EOP ;
+    rdfs:label "OCP Deschutes EOP: Coolant Leak Response" ;
+    aif-ops:executesOn deschutes:CDU_1 ;
+    aif-ops:hasSequence deschutes:Seq_LeakResponse ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §3.2 item 10 p.13; §6.7 Alarms for detected leaks p.26; §13.1 p.41; §13.2 Steps 1-2 p.42" .
+
+deschutes:Seq_LeakResponse a aif-ops:Sequence ;
+    rdfs:label "Leak Response Sequence (6 steps)" ;
+    aif-ops:hasAction deschutes:Action_EOP_PLCLeakAlarm ;
+    aif-ops:hasAction deschutes:Action_EOP_IdentifyZone ;
+    aif-ops:hasAction deschutes:Action_EOP_ShutSupplyValve ;
+    aif-ops:hasAction deschutes:Action_EOP_DisablePump ;
+    aif-ops:hasAction deschutes:Action_EOP_DrainPump ;
+    aif-ops:hasAction deschutes:Action_EOP_RepairComponent .
+
+# Step 1 — AutomatedAction: first use of this subclass in any aif-ops worked example.
+deschutes:Action_EOP_PLCLeakAlarm a aif-ops:AutomatedAction ;
+    rdfs:label "PLC fires leak alarm on detection of coolant in any of 3 rope sensor zones" ;
+    aif-ops:performedBy deschutes:PLC_ControlSystem ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §3.2 item 10 p.13: Leak rope detection (detected through PLC, 3 zones); §6.7 Alarms for detected leaks p.26" .
+
+deschutes:Action_EOP_IdentifyZone a aif-ops:ManualAction ;
+    rdfs:label "Operator identifies affected zone from PLC alarm indication (3-zone rope sensor system)" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §3.2 item 10 p.13: Leak rope detection (detected through PLC, 3 zones)" .
+
+deschutes:Action_EOP_ShutSupplyValve a aif-ops:ManualAction ;
+    rdfs:label "Shut off supply valve to affected component" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 1 p.42: Shut off supply valve; §13.1 p.41: manual stop valves to prevent disruptive fluid pressure or flow conditions" .
+
+deschutes:Action_EOP_DisablePump a aif-ops:ManualAction ;
+    rdfs:label "Disable pump via PLC pump enable/disable control parameter" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §7.2.2 p.28: Pump enable/disable (controllable parameter via PLC)" .
+
+deschutes:Action_EOP_DrainPump a aif-ops:ManualAction ;
+    rdfs:label "Connect drain hose to drain barb on bottom of pump and open drain valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 2 p.42: Connect drain hose to drain barb on bottom of pump and open drain valve" .
+
+deschutes:Action_EOP_RepairComponent a aif-ops:ManualAction ;
+    rdfs:label "Repair or replace the leaking component per documented repair procedures" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 6 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.1 p.41: repair procedures documentation requirement" .
+
+
+###############################################################################
+# 9. MOP: FILTER SERVICE  [class: aif-ops:MOP]
+#    Source: §13.3 Filter Removal Steps, p.44 (6 verbatim steps)
+###############################################################################
+
+deschutes:MOP_FilterService a aif-ops:MOP ;
+    rdfs:label "OCP Deschutes MOP: Filter Service (§13.3)" ;
+    aif-ops:executesOn deschutes:CDU_1 ;
+    aif-ops:hasSequence deschutes:Seq_FilterService ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Filter Removal Steps p.44" .
+
+deschutes:Seq_FilterService a aif-ops:Sequence ;
+    rdfs:label "Filter Service Sequence (6 steps)" ;
+    aif-ops:hasAction deschutes:Action_Filter_ShutInletValve ;
+    aif-ops:hasAction deschutes:Action_Filter_ShutOutletValve ;
+    aif-ops:hasAction deschutes:Action_Filter_ConnectDrain ;
+    aif-ops:hasAction deschutes:Action_Filter_LoosenFrontClamp ;
+    aif-ops:hasAction deschutes:Action_Filter_RemoveClamp ;
+    aif-ops:hasAction deschutes:Action_Filter_SlideOut .
+
+deschutes:Action_Filter_ShutInletValve a aif-ops:ManualAction ;
+    rdfs:label "Shutoff filter inlet valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 1 p.44" .
+
+deschutes:Action_Filter_ShutOutletValve a aif-ops:ManualAction ;
+    rdfs:label "Shutoff filter outlet valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 2 p.44" .
+
+deschutes:Action_Filter_ConnectDrain a aif-ops:ManualAction ;
+    rdfs:label "Connect drain hose to drain barb on bottom of filter and open drain valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 3 p.44" .
+
+deschutes:Action_Filter_LoosenFrontClamp a aif-ops:ManualAction ;
+    rdfs:label "Loosen front clamp with rag around joint to allow air to enter if needed to complete drain" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 4 p.44" .
+
+deschutes:Action_Filter_RemoveClamp a aif-ops:ManualAction ;
+    rdfs:label "Remove clamp from front of filter" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 5 p.44" .
+
+deschutes:Action_Filter_SlideOut a aif-ops:ManualAction ;
+    rdfs:label "Slide filter out for cleaning or replacement" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 6 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Step 6 p.44" .
+
+
+###############################################################################
+# 10. MOP: PUMP REMOVAL  [class: aif-ops:MOP]
+#     Source: §13.2 Pump Removal Steps, p.42 (10 verbatim steps)
+#     Action_PumpRemove (step 10) is the gate target of Interlock_HotswapFluidIsolation.
+###############################################################################
+
+deschutes:MOP_PumpRemoval a aif-ops:MOP ;
+    rdfs:label "OCP Deschutes MOP: Pump Removal (§13.2)" ;
+    aif-ops:executesOn deschutes:CDU_1 ;
+    aif-ops:hasSequence deschutes:Seq_PumpRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Pump Removal Steps p.42" .
+
+deschutes:Seq_PumpRemoval a aif-ops:Sequence ;
+    rdfs:label "Pump Removal Sequence (10 steps)" ;
+    aif-ops:hasAction deschutes:Action_Pump_ShutSupplyValve ;
+    aif-ops:hasAction deschutes:Action_Pump_ConnectDrain ;
+    aif-ops:hasAction deschutes:Action_Pump_DepressSchraeder ;
+    aif-ops:hasAction deschutes:Action_Pump_RemoveGussets ;
+    aif-ops:hasAction deschutes:Action_Pump_RemoveSuctionBolts ;
+    aif-ops:hasAction deschutes:Action_Pump_DisconnectTriclamp ;
+    aif-ops:hasAction deschutes:Action_Pump_UnplugPressureSensor ;
+    aif-ops:hasAction deschutes:Action_Pump_LoosenVictaulic ;
+    aif-ops:hasAction deschutes:Action_Pump_UnboltPump ;
+    aif-ops:hasAction deschutes:Action_PumpRemove .
+
+deschutes:Action_Pump_ShutSupplyValve a aif-ops:ManualAction ;
+    rdfs:label "Shut off supply valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 1 p.42" .
+
+deschutes:Action_Pump_ConnectDrain a aif-ops:ManualAction ;
+    rdfs:label "Connect drain hose to drain barb on bottom of pump and open drain valve" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 2 p.42" .
+
+deschutes:Action_Pump_DepressSchraeder a aif-ops:ManualAction ;
+    rdfs:label "Depress Schraeder valve as needed to drain line" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 3 p.42" .
+
+deschutes:Action_Pump_RemoveGussets a aif-ops:ManualAction ;
+    rdfs:label "Remove gussets" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 4 p.42" .
+
+deschutes:Action_Pump_RemoveSuctionBolts a aif-ops:ManualAction ;
+    rdfs:label "Remove 4x bolts from ANSI suction flange" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 5 p.42" .
+
+deschutes:Action_Pump_DisconnectTriclamp a aif-ops:ManualAction ;
+    rdfs:label "Disconnect 4-inch triclamp" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 6 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 6 p.42" .
+
+deschutes:Action_Pump_UnplugPressureSensor a aif-ops:ManualAction ;
+    rdfs:label "Unplug pressure sensor if required" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 7 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 7 p.42" .
+
+deschutes:Action_Pump_LoosenVictaulic a aif-ops:ManualAction ;
+    rdfs:label "Loosen Victaulic fittings in two locations to allow fittings to slide and section removal, or remove 4x bolts from output flange and loosen Victaulic fitting to allow pipe section removal" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 8 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 8 p.42" .
+
+deschutes:Action_Pump_UnboltPump a aif-ops:ManualAction ;
+    rdfs:label "Unbolt pump" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 9 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 9 p.42" .
+
+# Step 10 — gate target of Interlock_HotswapFluidIsolation
+deschutes:Action_PumpRemove a aif-ops:ManualAction ;
+    rdfs:label "With assistance device remove pump" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 10 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Step 10 p.42" .
+
+
+###############################################################################
+# 11. MOP: VFD REMOVAL  [class: aif-ops:MOP]
+#     Source: §13.5 VFD Removal Steps, p.46 (8 verbatim steps)
+#     LOTO_VFD_Step1 and LOTO_VFD_Step2 (§7) mirror steps 1-2 of this MOP.
+###############################################################################
+
+deschutes:MOP_VFDRemoval a aif-ops:MOP ;
+    rdfs:label "OCP Deschutes MOP: VFD Removal (§13.5)" ;
+    aif-ops:executesOn deschutes:CDU_1 ;
+    aif-ops:hasSequence deschutes:Seq_VFDRemoval ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 VFD Removal Steps p.46" .
+
+deschutes:Seq_VFDRemoval a aif-ops:Sequence ;
+    rdfs:label "VFD Removal Sequence (8 steps)" ;
+    aif-ops:hasAction deschutes:Action_VFD_TurnOffDisconnect ;
+    aif-ops:hasAction deschutes:Action_VFD_OpenHVEnclosure ;
+    aif-ops:hasAction deschutes:Action_VFD_DisconnectCables ;
+    aif-ops:hasAction deschutes:Action_VFD_RemoveConduit ;
+    aif-ops:hasAction deschutes:Action_VFD_RemoveWireBendConduit ;
+    aif-ops:hasAction deschutes:Action_VFD_RemoveTopBolts ;
+    aif-ops:hasAction deschutes:Action_VFD_LoosenKeyholeBolts ;
+    aif-ops:hasAction deschutes:Action_VFD_LiftRemove .
+
+deschutes:Action_VFD_TurnOffDisconnect a aif-ops:ManualAction ;
+    rdfs:label "Turn off main disconnect for VFD to be serviced" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 1 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 1 p.46" .
+
+deschutes:Action_VFD_OpenHVEnclosure a aif-ops:ManualAction ;
+    rdfs:label "Open high voltage enclosure and ensure power to VFD is removed" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 2 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 2 p.46" .
+
+deschutes:Action_VFD_DisconnectCables a aif-ops:ManualAction ;
+    rdfs:label "Open cover of VFD and disconnect power and control cables" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 3 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 3 p.46" .
+
+deschutes:Action_VFD_RemoveConduit a aif-ops:ManualAction ;
+    rdfs:label "Remove conduit from bottom of VFD" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 4 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 4 p.46" .
+
+deschutes:Action_VFD_RemoveWireBendConduit a aif-ops:ManualAction ;
+    rdfs:label "Remove wire from inside VFD and bend conduit out of the way for VFD removal" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 5 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 5 p.46" .
+
+deschutes:Action_VFD_RemoveTopBolts a aif-ops:ManualAction ;
+    rdfs:label "Remove top two bolts in through holes on VFD" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 6 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 6 p.46" .
+
+deschutes:Action_VFD_LoosenKeyholeBolts a aif-ops:ManualAction ;
+    rdfs:label "Loosen top key hole bolts and bottom slotted hole bolts" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 7 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 7 p.46" .
+
+deschutes:Action_VFD_LiftRemove a aif-ops:ManualAction ;
+    rdfs:label "With assistance lift and remove VFD from frame" ;
+    aif-ops:performedBy deschutes:Technician ;
+    aif-ops:stepOrder 8 ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.5 Step 8 p.46" .
+
+
+###############################################################################
+# 12. MAINTENANCE TASK  [class: aif-ops:OnConditionMaintenanceTask]
+#     Source: §13.3 Filter Removal Step 6 p.44 ("cleaning or replacement");
+#             §20.5 Hydraulic p.73-74 ("Vendor to provide guidance on
+#             alert/alarm thresholds for maintenance").
+#     No fixed interval is specified in the design spec; the trigger is
+#     condition-based (differential pressure or visual inspection result).
+###############################################################################
+
+deschutes:MT_FilterConditionBased a aif-ops:OnConditionMaintenanceTask ;
+    rdfs:label "Filter cleaning or replacement — trigger threshold per vendor guidance" ;
+    aif-ops:hasTriggerCondition "Vendor-specified alert/alarm threshold (§20.5: 'Vendor to provide guidance on alert/alarm thresholds for maintenance'). Service action: cleaning or replacement (§13.3 Step 6: 'Slide filter out for cleaning or replacement')." ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.3 Filter Removal Step 6 p.44: 'Slide filter out for cleaning or replacement'; §20.5 Hydraulic p.73-74: 'Vendor to provide guidance on alert/alarm thresholds for maintenance'" .
+
+deschutes:CDU_1 aif-ops:hasMaintenanceTask deschutes:MT_FilterConditionBased .
+
+
+###############################################################################
+# 13. COMMISSIONING STEP  [class: aif-ops:CommissioningStep]
+#     Source: §20.5 Primary and secondary filters, Hydraulic and Impulse
+#     subsections, p.73-74.
+#     Pass criteria: verbatim from §20.5 Hydraulic (the measurement that
+#     constitutes successful validation).
+#     Fail criteria: verbatim from §20.5 Impulse (the condition inspected for).
+###############################################################################
+
+deschutes:CS_FilterHydraulicTest a aif-ops:CommissioningStep ;
+    rdfs:label "§20.5 Primary/Secondary Filter Hydraulic and Impulse Validation" ;
+    aif-ops:hasPassCriteria "Measure dP vs flow of filter assemblies; validation shall be done with DI water and PG25 coolants." ;
+    aif-ops:hasFailCriteria "A filter housing will be pressurized to 150 psig, then a ball valve will be suddenly opened–allowing for the water to escape through the housing outlet and create an impulse condition. The filter cartridge will be removed and inspected for damage." ;
+    aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §20.5 Primary and secondary filters, Hydraulic p.73-74; §20.5 Impulse p.74" .
+
+deschutes:CDU_1 aif-ops:hasCommissioningStep deschutes:CS_FilterHydraulicTest .
