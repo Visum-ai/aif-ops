@@ -558,6 +558,8 @@ See `LIMITATIONS.md` in the repository root for the full list. Key entries:
 
 **L6: EOP_LeakResponse in the Deschutes extraction.** The OCP Deschutes specification does not document verbatim EOP steps. The `EOP_LeakResponse` sequence is designed from the spec's leak detection, alarm, pump control, and maintenance access requirements. It is a procedure derived from the source, not a verbatim extraction.
 
+**L7: sequenceOrder uniqueness and sequencePhase exclusivity.** Sequence_Shape cannot enforce that `sequenceOrder` values are unique across sibling Sequences within a Procedure, or that each `sequencePhase` label (`"pre"`, `"core"`, `"post"`) appears at most once per Procedure. Duplicate orderings or duplicate phase labels pass validation. Requires SHACL-SPARQL (deferred, consistent with L1).
+
 ## 11. Status
 
 **Complete and validated:**
@@ -577,7 +579,7 @@ See `LIMITATIONS.md` in the repository root for the full list. Key entries:
 **Deferred:**
 
 - GPU_Rack placement against `brick:ICT_Equipment` subtree (two reasonable options; warrants technical-committee review)
-- SHACL-SPARQL for stepOrder uniqueness and contiguity (L1)
+- SHACL-SPARQL for stepOrder uniqueness and contiguity (L1), and sequenceOrder/sequencePhase cross-sibling constraints (L7)
 - Full 223P alignment pass with working-group review
 - Formal evaluation section with full pyshacl output
 

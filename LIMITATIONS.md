@@ -118,3 +118,13 @@ Shapes target parent classes directly (`aif-ops:Procedure`, `aif-ops:Action`, `a
 **Consequence:** The EOP is a reasonable operational inference rather than a verbatim extraction. It conforms to the schema and validates cleanly, but cannot be cited to a specific section of the source document for those three steps.
 
 **Resolution path:** If a verbatim EOP becomes available in OCP Project Deschutes documentation, replace the designed procedure with a direct extraction and update `aif-ops:hasSource` on each step to cite the verbatim passage. Until then, the instance graph should be treated as a schema exercise rather than an authoritative operational document.
+
+---
+
+### L7: `sequenceOrder` uniqueness and `sequencePhase` exclusivity within a Procedure
+
+`Sequence_Shape` enforces that each `Sequence` carries at most one `sequenceOrder` value (a positive integer) and at most one `sequencePhase` value drawn from `{"pre", "core", "post"}`. It does not enforce that `sequenceOrder` values are unique across all `Sequence` nodes within the same `Procedure`, or that each `sequencePhase` label appears at most once per `Procedure`.
+
+**Consequence:** A `Procedure` with two `Sequence` nodes both declaring `sequenceOrder 1`, or two `Sequence` nodes both declaring `sequencePhase "core"`, will pass validation without error.
+
+**Resolution path:** SHACL-SPARQL (`sh:sparql` constraint) can express both uniqueness requirements at the `Procedure` level. Deferred to a future release, consistent with L1.
