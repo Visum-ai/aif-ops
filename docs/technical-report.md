@@ -30,11 +30,15 @@ Brick is not a new schema language. It is a vocabulary expressed in a stack of W
 
 ## 2. Position in the ASHRAE standards landscape
 
+![The operational extension in the ASHRAE and Brick standards landscape.](fig-standards-landscape.png)
+
+**Figure 1.** Where the operational extension sits. The ASHRAE standards and guidelines (Std 135 BACnet, Guideline 36 sequences of operation, Std 231-2026 CDL control-sequence specification, and proposed Std 223P semantic data model) sit above Brick Schema v1.4.4, which aligns with 223P and complements Std 231-2026. The operational metadata extension `owl:imports` Brick and serializes out to Brick TTL/JSON-LD for building controls and BMS SPARQL queries, and to NVIDIA AIF `aif:ops:*` USD for the AI factory digital twin (SimReady, Omniverse DSX).
+
 **ASHRAE Standard 135 (BACnet).** Transport and device-communication protocol for HVAC and building systems. BACnet defines how devices exchange messages. This extension does not change the BACnet layer.
 
-**ASHRAE Standard 231P (Control Description Language).** Codifies CDL for machine-readable control logic. 231P is the closed-loop control surface: the BAS runs sequences by itself. This extension is the human-procedure surface: MOPs, SOPs, EOPs, and LOTO steps that an operator executes. The two are complementary. `Sequence` here means an ordered operator procedure outside the controller runtime; `Action` means an operator step, not a controller block.
+**ASHRAE Standard 231-2026 (Control Description Language).** Codifies CDL for machine-readable control logic. 231 is the closed-loop control surface: the BAS runs sequences by itself. This extension is the human-procedure surface: MOPs, SOPs, EOPs, and LOTO steps that an operator executes. The two are complementary. `Sequence` here means an ordered operator procedure outside the controller runtime; `Action` means an operator step, not a controller block.
 
-**ASHRAE Standard 223 (Semantic Interoperability).** The parallel ASHRAE semantic model for building topology and equipment relationships. It overlaps Brick in purpose. This extension lands first as a Brick contribution; a starter 223P mapping for all 12 operational entity classes appears in Section 9.
+**ASHRAE Standard 223P (Semantic Data Model).** The parallel ASHRAE semantic model for building topology and equipment relationships. It overlaps Brick in purpose. This extension lands first as a Brick contribution; a starter 223P mapping for all 12 operational entity classes appears in Section 9.
 
 **ASHRAE Guideline 36.** The G36 SHACL conformance approach mirrors this extension: ship SHACL shapes that assert correctness against a populated graph rather than bloating the class vocabulary.
 
@@ -589,6 +593,8 @@ See `LIMITATIONS.md` in the repository root for the full list. Key entries:
 - [Brick Consortium extension architecture guidance](https://groups.google.com/g/brickschema/c/kbiIpfFnWdw)
 - [Brick Consortium G36 SHACL strategy](https://groups.google.com/g/brickschema/c/vNqlHBzupIU)
 - [SHACL W3C Recommendation](https://www.w3.org/TR/shacl/)
+- ASHRAE. *Proposed Standard 223P: Semantic Data Model for Analytics and Automation Applications in Buildings* (advisory public review).
+- ASHRAE. *ANSI/ASHRAE Standard 231-2026: A Control Description Language for Building Environmental Control Sequences.* 2026. https://data.ashrae.org/standard231/
 - [pyshacl](https://github.com/RDFLib/pySHACL)
 - [NVIDIA AIF Pipeline Samples](https://github.com/NVIDIA-Omniverse/aif-pipeline-samples)
 - [NVIDIA SimReady Foundation](https://github.com/nvidia/simready-foundation)
