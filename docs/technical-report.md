@@ -587,6 +587,10 @@ See `LIMITATIONS.md` in the repository root for the full list. Key entries:
 - Full 223P alignment pass with working-group review
 - Formal evaluation section with full pyshacl output
 
+## Acknowledgments
+
+Marco Pritoni (Lawrence Berkeley National Laboratory) is a contributor and collaborator on this work.
+
 ## 12. References
 
 - [Brick Schema](https://brickschema.org/) and [v1.4.4 release](https://github.com/BrickSchema/Brick/releases/tag/v1.4.4)
