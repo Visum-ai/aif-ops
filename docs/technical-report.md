@@ -36,7 +36,7 @@ Brick is not a new schema language. It is a vocabulary expressed in a stack of W
 
 **ASHRAE Standard 135 (BACnet).** Transport and device-communication protocol for HVAC and building systems. BACnet defines how devices exchange messages. This extension does not change the BACnet layer.
 
-**ASHRAE Standard 231-2026 (Control Description Language).** Codifies CDL for machine-readable control logic. 231 is the closed-loop control surface: the BAS runs sequences by itself. This extension is the human-procedure surface: MOPs, SOPs, EOPs, and LOTO steps that an operator executes. The two are complementary. `Sequence` here means an ordered operator procedure outside the controller runtime; `Action` means an operator step, not a controller block.
+**ASHRAE Standard 231-2026 (Control Description Language).** Codifies CDL for machine-readable control logic. 231 is the closed-loop control surface: the BAS runs sequences by itself. This extension is the human-procedure surface: MOPs, SOPs, EOPs, and LOTO steps that an operator executes. The two are complementary (Figure 1). `Sequence` here means an ordered operator procedure outside the controller runtime; `Action` means an operator step, not a controller block.
 
 **ASHRAE Standard 223P (Semantic Data Model).** The parallel ASHRAE semantic model for building topology and equipment relationships. It overlaps Brick in purpose. This extension lands first as a Brick contribution; a starter 223P mapping for all 12 operational entity classes appears in Section 9.
 
@@ -380,10 +380,18 @@ Source: Vertiv XDU1350B Operation and Maintenance Manual (SL-71310, 2025). Full 
 
 The extraction covers all 12 operational entity classes. Source citations trace to: §1.1 (LOTO/energy isolation), §1.5 (isolation points), §4.5 Figure 4.18 (operating modes), §4.6 Table 4.39 (alarm codes, interlocks), §5.3 (maintenance intervals), §5.4 (filter service).
 
+![The Vertiv XDU1350B coolant leak response EOP as a typed operational graph.](fig-vertiv-leak-eop.png)
+
+**Figure 2.** The Vertiv XDU1350B coolant leak response EOP as a typed graph. Blue nodes are Brick equipment and points, teal nodes are the operational entity classes this extension adds, and amber nodes are the actors that perform each action. The A37 Leak-Unit event triggers the EOP, whose sequence runs from leak identification (with an `on_failure` branch to the Safety Officer) through electrical isolation and a verification step to the repair. Dashed gray edges show a sample of the `hasSource` citations that ground each operational entity in a clause of the SL-71310 manual.
+
+![Operating modes, interlock, electrical isolation, and lockout-tagout around the Vertiv unit.](fig-vertiv-safety-context.png)
+
+**Figure 3.** The safety and state context around the same unit. The Online to Shutdown-Fault operating-mode transition is explicit, the A43 Insufficient Fluid interlock gates the start action, and the A44 no-fluid event is recorded as log-only with no procedure trigger. The remote electrical disconnect is an isolation point whose isolation procedure is the leak response EOP, and the three lockout-tagout steps are recorded as part of that same procedure.
+
 Key extraction highlights:
 
-- EOP for A37 Coolant Leak alarm: 11 ordered actions, 3 LOTO steps that map to OSHA 1910.147(d)(2), (d)(3)+(d)(4), (d)(6)
-- Isolation points: electrical disconnect (§1.5), fluid supply and return valves, filter isolation valves (§5.4); filter valves link to filter service MOP but not to CDU directly (they isolate a branch, not the unit)
+- EOP for A37 Coolant Leak alarm: 11 ordered actions, 3 LOTO steps that map to OSHA 1910.147(d)(2), (d)(3)+(d)(4), (d)(6) (Figure 2)
+- Isolation points: electrical disconnect (§1.5), fluid supply and return valves, filter isolation valves (§5.4); filter valves link to filter service MOP but not to CDU directly (they isolate a branch, not the unit) (Figure 3)
 - 2 interlocks that may be active when A37 fires: A27 Pump Low Flow and A43 Insufficient Fluid
 - Operating modes: Online to Shutdown-Fault transition (§4.5 Figure 4.18)
 - Maintenance task: filter inspection every 3 months (`recursEvery "P3M"^^xsd:duration`, §5.3)
@@ -393,6 +401,14 @@ Key extraction highlights:
 Source: OCP Project Deschutes: Data Center Facilities (v0.8.0, Google, OCP 2025). Full extraction file: `examples/ocp-deschutes-extraction.ttl`. Source citations verified against the PDF on 2026-06-04.
 
 The CDU is a 2 MW thermal load, 500 GPM IT flow unit with a 3-zone rope leak detection system (detected through PLC), Modbus/TCP over IPv4+IPv6 control, and support for both rear-door heat exchanger and rack-level secondary piping.
+
+![The OCP Project Deschutes coolant leak response EOP, showing the automated and manual boundary.](fig-deschutes-leak-eop.png)
+
+**Figure 4.** The OCP Project Deschutes coolant leak response EOP as a typed graph. Step 1 is an AutomatedAction performed by the PLC control system and step 3 is a ManualAction performed by the technician, so the boundary between automated and manual response is explicit in the graph. Blue nodes are Brick equipment and points, teal nodes are operational entities, and amber nodes are actors. Dashed gray edges show a sample of the `hasSource` citations that ground each operational entity in a clause of the Deschutes specification.
+
+![Two Deschutes maintenance procedures that share one CDU, with the hot-swap interlock and VFD lockout-tagout.](fig-deschutes-maintenance.png)
+
+**Figure 5.** Two maintenance procedures reached from the same CDU through its isolation points. The pump supply shut-off valve is the isolation point for the pump removal MOP, and the hot-swap fluid isolation interlock gates the final pump-removal step. The VFD main disconnect is the one electrical isolation point, with its two lockout-tagout steps recorded as part of the VFD removal MOP.
 
 ### 8.1 What the extraction covers
 
@@ -405,7 +421,7 @@ Actor instances for this extraction:
 
 Summary counts:
 
-- 4 procedures: 1 EOP (coolant leak response), 3 MOPs (pump removal, filter service, VFD removal)
+- 4 procedures: 1 EOP (coolant leak response), 3 MOPs (pump removal, filter service, VFD removal) (Figure 5)
 - 30 ordered actions across all 4 procedure sequences
 - 4 isolation points: pump supply valve, filter inlet valve, filter outlet valve, VFD main disconnect
 - 2 interlocks: `Interlock_HotswapFluidIsolation` (fluid), `Interlock_FlowMeterShutdown` (electrical)
@@ -420,7 +436,7 @@ Source: §3.2 item 10 p.13; §6.7 p.26; §7.2.2 p.28; §13.1 p.41; §13.2 Steps 
 
 The OCP specification does not document verbatim EOP steps. The sequence below is derived from the spec's requirements for leak detection, alarm handling, pump control, and maintenance access. This derivation is documented in `LIMITATIONS.md` (L6).
 
-Step 1 is an `AutomatedAction`: the PLC fires the alarm on detection of coolant in any of the 3 rope sensor zones. The PLC is an `Actor` with a typed `performedBy` relationship — the boundary between automated and manual response is explicit in the graph, not a narrative note.
+Step 1 is an `AutomatedAction`: the PLC fires the alarm on detection of coolant in any of the 3 rope sensor zones. The PLC is an `Actor` with a typed `performedBy` relationship: the boundary between automated and manual response is explicit in the graph, not a narrative note (Figure 4).
 
 | Step | Class | Actor | Label | Source |
 |---|---|---|---|---|

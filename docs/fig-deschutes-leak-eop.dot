@@ -1,0 +1,54 @@
+// OCP Project Deschutes CDU worked example, part A: the coolant leak response EOP,
+// showing the automated/manual boundary (PLC vs technician).
+// Every node and edge is verbatim from examples/ocp-deschutes-extraction.ttl.
+// Render: dot -Tpng -Gdpi=200 fig-deschutes-leak-eop.dot -o fig-deschutes-leak-eop.png
+digraph deschutes_leak_eop {
+  rankdir=TB;
+  bgcolor="white";
+  splines=true;
+  nodesep=0.35;
+  ranksep=0.55;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12,
+        margin="0.14,0.09", penwidth=1.3, color="#1f3a5f"];
+  edge [fontname="Helvetica", fontsize=10, color="#3b4a5a", fontcolor="#2a3744",
+        arrowsize=0.8, penwidth=1.1];
+
+  // Brick / equipment (blue)
+  CDU      [label=<<b>CDU (PECOS, 2 MW)</b><br/><font point-size="10">Coolant_Distribution_Unit</font>>, fillcolor="#cfe3ff"];
+  LeakRope [label=<<b>Leak rope sensor (3 zones)</b><br/><font point-size="10">brick:Leak_Detection_Sensor</font>>, fillcolor="#cfe3ff"];
+
+  // aif-ops operational entities (teal)
+  FM  [label=<<b>Coolant leak</b><br/><font point-size="10">FailureMode</font>>, fillcolor="#cdeede"];
+  EVT [label=<<b>Leak detected alarm</b><br/><font point-size="10">Event</font>>, fillcolor="#cdeede"];
+  EOP [label=<<b>Coolant leak response</b><br/><font point-size="10">EOP (Procedure)</font>>, fillcolor="#cdeede"];
+  SEQ [label=<<b>Leak response sequence</b><br/><font point-size="10">Sequence (6 steps)</font>>, fillcolor="#cdeede"];
+  A1  [label=<<b>1. PLC fires leak alarm</b><br/><font point-size="10">AutomatedAction</font>>, fillcolor="#cdeede"];
+  A3  [label=<<b>3. Shut supply valve</b><br/><font point-size="10">ManualAction</font>>, fillcolor="#cdeede"];
+
+  // Actors (amber)
+  PLC  [label=<<b>PLC control system</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+  TECH [label=<<b>On-site technician</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+
+  // Source document (gray) stand-in
+  SRC [label=<<b>Deschutes spec</b><br/><font point-size="10">Data Center Facilities v0.8.0</font>>, fillcolor="#e9ecef", color="#8a939b", shape=note];
+
+  CDU -> FM       [label="hasFailureMode"];
+  CDU -> LeakRope [label="hasPoint"];
+  FM  -> LeakRope [label="hasDetectionSignature"];
+  FM  -> EOP      [label="mitigatedBy"];
+  EVT -> EOP      [label="triggers"];
+  EOP -> CDU      [label="executesOn"];
+  EOP -> SEQ      [label="hasSequence"];
+  SEQ -> A1       [label="hasAction"];
+  SEQ -> A3       [label="hasAction"];
+  A1  -> PLC      [label="performedBy"];
+  A3  -> TECH     [label="performedBy"];
+
+  edge [style=dashed, color="#9aa3ab", fontcolor="#7a838b", penwidth=0.9];
+  CDU -> SRC [label="hasSource"];
+  FM  -> SRC [label="hasSource"];
+  EOP -> SRC [label="hasSource"];
+
+  { rank=same; PLC; TECH; }
+}

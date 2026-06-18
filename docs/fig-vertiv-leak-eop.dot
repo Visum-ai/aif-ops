@@ -1,0 +1,64 @@
+// Vertiv XDU1350B worked example, part A: the coolant leak response EOP.
+// Every node and edge is verbatim from examples/vertiv-xdu1350-extraction.ttl.
+// Render: dot -Tpng -Gdpi=200 fig-vertiv-leak-eop.dot -o fig-vertiv-leak-eop.png
+digraph vertiv_leak_eop {
+  rankdir=TB;
+  bgcolor="white";
+  splines=true;
+  nodesep=0.35;
+  ranksep=0.55;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12,
+        margin="0.14,0.09", penwidth=1.3, color="#1f3a5f"];
+  edge [fontname="Helvetica", fontsize=10, color="#3b4a5a", fontcolor="#2a3744",
+        arrowsize=0.8, penwidth=1.1];
+
+  // Brick / equipment (blue)
+  CDU    [label=<<b>Vertiv XDU1350B</b><br/><font point-size="10">Coolant_Distribution_Unit</font>>, fillcolor="#cfe3ff"];
+  LeakSw [label=<<b>Drip-tray level switch</b><br/><font point-size="10">brick:Leak_Detection_Sensor</font>>, fillcolor="#cfe3ff"];
+
+  // aif-ops operational entities (teal)
+  FM   [label=<<b>Coolant leak detected</b><br/><font point-size="10">FailureMode</font>>, fillcolor="#cdeede"];
+  A37  [label=<<b>A37 Leak-Unit (latching)</b><br/><font point-size="10">Event</font>>, fillcolor="#cdeede"];
+  EOP  [label=<<b>Coolant leak response</b><br/><font point-size="10">EOP (Procedure)</font>>, fillcolor="#cdeede"];
+  SEQ  [label=<<b>Leak response sequence</b><br/><font point-size="10">Sequence</font>>, fillcolor="#cdeede"];
+  A1   [label=<<b>1. Identify leak</b><br/><font point-size="10">ManualAction</font>>, fillcolor="#cdeede"];
+  Aesc [label=<<b>Escalate to Safety Officer</b><br/><font point-size="10">ManualAction (on_failure)</font>>, fillcolor="#cdeede"];
+  A3   [label=<<b>3. Open disconnect</b><br/><font point-size="10">ManualAction</font>>, fillcolor="#cdeede"];
+  A4   [label=<<b>4. Verify parts at rest</b><br/><font point-size="10">VerificationAction</font>>, fillcolor="#cdeede"];
+  A5   [label=<<b>5. Repair leak</b><br/><font point-size="10">ManualAction</font>>, fillcolor="#cdeede"];
+
+  // Actors (amber)
+  OP   [label=<<b>Operator</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+  SO   [label=<<b>Safety Officer</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+  TECH [label=<<b>Technician</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+
+  // Source document (gray); a single stand-in for the hasSource literals.
+  SRC  [label=<<b>SL-71310 manual</b><br/><font point-size="10">Vertiv XDU1350B O&amp;M</font>>, fillcolor="#e9ecef", color="#8a939b", shape=note];
+
+  CDU -> FM     [label="hasFailureMode"];
+  CDU -> LeakSw [label="hasPoint"];
+  FM  -> LeakSw [label="hasDetectionSignature"];
+  FM  -> EOP    [label="mitigatedBy"];
+  A37 -> EOP    [label="triggers"];
+  EOP -> CDU    [label="executesOn"];
+  EOP -> SEQ    [label="hasSequence"];
+  SEQ -> A1     [label="hasAction"];
+  SEQ -> A3     [label="hasAction"];
+  SEQ -> A4     [label="hasAction"];
+  SEQ -> A5     [label="hasAction"];
+  A1  -> Aesc   [label="on_failure"];
+
+  A1  -> OP     [label="performedBy"];
+  Aesc -> SO    [label="performedBy"];
+  A3  -> OP     [label="performedBy"];
+  A4  -> OP     [label="performedBy"];
+  A5  -> TECH   [label="performedBy"];
+
+  edge [style=dashed, color="#9aa3ab", fontcolor="#7a838b", penwidth=0.9];
+  CDU -> SRC [label="hasSource"];
+  EOP -> SRC [label="hasSource"];
+  A37 -> SRC [label="hasSource"];
+
+  { rank=same; OP; SO; TECH; }
+}

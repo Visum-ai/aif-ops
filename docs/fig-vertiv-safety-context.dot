@@ -1,0 +1,59 @@
+// Vertiv XDU1350B worked example, part B: operating modes, interlock, electrical
+// isolation, and lockout-tagout around the unit.
+// Every node and edge is verbatim from examples/vertiv-xdu1350-extraction.ttl.
+// Render: dot -Tpng -Gdpi=200 fig-vertiv-safety-context.dot -o fig-vertiv-safety-context.png
+digraph vertiv_safety_context {
+  rankdir=TB;
+  bgcolor="white";
+  splines=true;
+  nodesep=0.35;
+  ranksep=0.55;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12,
+        margin="0.14,0.09", penwidth=1.3, color="#1f3a5f"];
+  edge [fontname="Helvetica", fontsize=10, color="#3b4a5a", fontcolor="#2a3744",
+        arrowsize=0.8, penwidth=1.1];
+
+  // Brick / equipment (blue)
+  CDU [label=<<b>Vertiv XDU1350B</b><br/><font point-size="10">Coolant_Distribution_Unit</font>>, fillcolor="#cfe3ff"];
+
+  // aif-ops operational entities (teal)
+  ModeOn  [label=<<b>Online (Running)</b><br/><font point-size="10">OperatingMode</font>>, fillcolor="#cdeede"];
+  ModeFlt [label=<<b>Shutdown - Fault</b><br/><font point-size="10">OperatingMode (terminal)</font>>, fillcolor="#cdeede"];
+  I43     [label=<<b>A43 Insufficient Fluid</b><br/><font point-size="10">Interlock</font>>, fillcolor="#cdeede"];
+  Start   [label=<<b>Start CDU</b><br/><font point-size="10">ManualAction (gate target)</font>>, fillcolor="#cdeede"];
+  A44     [label=<<b>A44 no-fluid (self-clear)</b><br/><font point-size="10">Event, log only, no trigger</font>>, fillcolor="#cdeede"];
+  IPElec  [label=<<b>Remote electrical disconnect</b><br/><font point-size="10">IsolationPoint</font>>, fillcolor="#cdeede"];
+  EOP     [label=<<b>Coolant leak response</b><br/><font point-size="10">EOP (Procedure)</font>>, fillcolor="#cdeede"];
+  LOTO1   [label=<<b>LOTO 1: switch off</b><br/><font point-size="10">LockoutTagoutStep</font>>, fillcolor="#cdeede"];
+  LOTO2   [label=<<b>LOTO 2: disconnect supply</b><br/><font point-size="10">LockoutTagoutStep</font>>, fillcolor="#cdeede"];
+  LOTO3   [label=<<b>LOTO 3: parts at rest</b><br/><font point-size="10">LockoutTagoutStep</font>>, fillcolor="#cdeede"];
+
+  // Actor (amber)
+  OP [label=<<b>Operator</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+
+  // Source document (gray) stand-in
+  SRC [label=<<b>SL-71310 manual</b><br/><font point-size="10">Vertiv XDU1350B O&amp;M</font>>, fillcolor="#e9ecef", color="#8a939b", shape=note];
+
+  CDU -> ModeOn  [label="hasOperatingMode"];
+  CDU -> I43     [label="hasInterlock"];
+  CDU -> IPElec  [label="isIsolatedBy"];
+  ModeOn -> ModeFlt [label="transitionsTo"];
+  I43 -> Start   [label="gatesAction"];
+  Start -> OP    [label="performedBy"];
+  IPElec -> EOP  [label="hasIsolationProcedure"];
+  LOTO1 -> EOP   [label="partOfProcedure"];
+  LOTO2 -> EOP   [label="partOfProcedure"];
+  LOTO3 -> EOP   [label="partOfProcedure"];
+
+  // serialize the three CDU branches vertically so the figure stays narrow
+  ModeFlt -> I43    [style=invis];
+  Start   -> IPElec [style=invis];
+  IPElec  -> LOTO1  [style=invis];
+
+  edge [style=dashed, color="#9aa3ab", fontcolor="#7a838b", penwidth=0.9];
+  CDU -> SRC [label="hasSource"];
+  A44 -> SRC [label="hasSource"];
+  EOP -> SRC [label="hasSource"];
+
+}

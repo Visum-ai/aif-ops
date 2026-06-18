@@ -1,0 +1,61 @@
+// OCP Project Deschutes CDU worked example, part B: two maintenance procedures
+// that share one unit, with the hot-swap interlock and VFD lockout-tagout.
+// Every node and edge is verbatim from examples/ocp-deschutes-extraction.ttl.
+// Render: dot -Tpng -Gdpi=200 fig-deschutes-maintenance.dot -o fig-deschutes-maintenance.png
+digraph deschutes_maintenance {
+  rankdir=TB;
+  bgcolor="white";
+  splines=true;
+  nodesep=0.35;
+  ranksep=0.55;
+  fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12,
+        margin="0.14,0.09", penwidth=1.3, color="#1f3a5f"];
+  edge [fontname="Helvetica", fontsize=10, color="#3b4a5a", fontcolor="#2a3744",
+        arrowsize=0.8, penwidth=1.1];
+
+  // Brick / equipment (blue)
+  CDU [label=<<b>CDU (PECOS, 2 MW)</b><br/><font point-size="10">Coolant_Distribution_Unit</font>>, fillcolor="#cfe3ff"];
+
+  // aif-ops operational entities (teal)
+  IPpump  [label=<<b>Pump supply shut-off valve</b><br/><font point-size="10">IsolationPoint</font>>, fillcolor="#cdeede"];
+  MOPp    [label=<<b>Pump removal MOP</b><br/><font point-size="10">MOP (Procedure)</font>>, fillcolor="#cdeede"];
+  SEQp    [label=<<b>Pump removal sequence</b><br/><font point-size="10">Sequence (10 steps)</font>>, fillcolor="#cdeede"];
+  Aremove [label=<<b>Step 10: remove pump</b><br/><font point-size="10">ManualAction (gate target)</font>>, fillcolor="#cdeede"];
+  ILK     [label=<<b>Hot-swap fluid isolation</b><br/><font point-size="10">Interlock</font>>, fillcolor="#cdeede"];
+
+  IPvfd [label=<<b>VFD main disconnect</b><br/><font point-size="10">IsolationPoint (electrical)</font>>, fillcolor="#cdeede"];
+  MOPv  [label=<<b>VFD removal MOP</b><br/><font point-size="10">MOP (Procedure)</font>>, fillcolor="#cdeede"];
+  LOTO1 [label=<<b>VFD LOTO 1: turn off disconnect</b><br/><font point-size="10">LockoutTagoutStep</font>>, fillcolor="#cdeede"];
+  LOTO2 [label=<<b>VFD LOTO 2: open HV enclosure</b><br/><font point-size="10">LockoutTagoutStep</font>>, fillcolor="#cdeede"];
+
+  // Actor (amber)
+  TECH [label=<<b>On-site technician</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
+
+  // Source document (gray) stand-in
+  SRC [label=<<b>Deschutes spec</b><br/><font point-size="10">Data Center Facilities v0.8.0</font>>, fillcolor="#e9ecef", color="#8a939b", shape=note];
+
+  CDU    -> IPpump  [label="isIsolatedBy"];
+  CDU    -> ILK     [label="hasInterlock"];
+  CDU    -> IPvfd   [label="isIsolatedBy"];
+  IPpump -> MOPp    [label="hasIsolationProcedure"];
+  MOPp   -> SEQp    [label="hasSequence"];
+  SEQp   -> Aremove [label="hasAction"];
+  ILK    -> Aremove [label="gatesAction"];
+  Aremove -> TECH   [label="performedBy"];
+  IPvfd  -> MOPv    [label="hasIsolationProcedure"];
+  LOTO1  -> MOPv    [label="partOfProcedure"];
+  LOTO2  -> MOPv    [label="partOfProcedure"];
+
+  // stack the VFD-removal cluster below the pump-removal cluster to stay narrow,
+  // and stack its three feeder nodes vertically rather than in a wide row
+  Aremove -> IPvfd  [style=invis];
+  IPvfd   -> LOTO1  [style=invis];
+  LOTO1   -> LOTO2  [style=invis];
+
+  edge [style=dashed, color="#9aa3ab", fontcolor="#7a838b", penwidth=0.9];
+  CDU  -> SRC [label="hasSource"];
+  ILK  -> SRC [label="hasSource"];
+  MOPp -> SRC [label="hasSource"];
+
+}
