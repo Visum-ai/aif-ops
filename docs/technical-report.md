@@ -404,11 +404,11 @@ The CDU is a 2 MW thermal load, 500 GPM IT flow unit with a 3-zone rope leak det
 
 ![The OCP Project Deschutes coolant leak response EOP, showing the automated and manual boundary.](fig-deschutes-leak-eop.png)
 
-**Figure 4.** The OCP Project Deschutes coolant leak response EOP as a typed graph. Step 1 is an AutomatedAction performed by the PLC control system and step 3 is a ManualAction performed by the technician, so the boundary between automated and manual response is explicit in the graph. Blue nodes are Brick equipment and points, teal nodes are operational entities, and amber nodes are actors. Dashed gray edges show a sample of the `hasSource` citations that ground each operational entity in a clause of the Deschutes specification.
+**Figure 4.** The OCP Project Deschutes coolant leak response EOP as a typed graph. Step 1 is an AutomatedAction performed by the PLC control system and step 3 is a ManualAction performed by the technician, so the boundary between automated and manual response is explicit in the graph. Blue nodes are Brick equipment and points, teal nodes are operational entities, and amber nodes are actors. Dashed gray edges show a sample of the `hasSource` citations that ground each operational entity in a clause of the Deschutes specification. The pump supply shut-off valve, the same isolation point shown in Figure 5, has `hasIsolationProcedure` edges to both this EOP and the pump removal MOP: step 3 here and step 1 of pump removal cite the identical spec location, §13.2 Step 1 p.42.
 
 ![Two Deschutes maintenance procedures that share one CDU, with the hot-swap interlock and VFD lockout-tagout.](fig-deschutes-maintenance.png)
 
-**Figure 5.** Two maintenance procedures reached from the same CDU through its isolation points. The pump supply shut-off valve is the isolation point for the pump removal MOP, and the hot-swap fluid isolation interlock gates the final pump-removal step. The VFD main disconnect is the one electrical isolation point, with its two lockout-tagout steps recorded as part of the VFD removal MOP.
+**Figure 5.** Two maintenance procedures reached from the same CDU through its isolation points. The pump supply shut-off valve is the isolation point for the pump removal MOP (also for the coolant leak response EOP, see Figure 4), and the hot-swap fluid isolation interlock gates the final pump-removal step. The VFD main disconnect is the one electrical isolation point, with its two lockout-tagout steps recorded as part of the VFD removal MOP.
 
 ### 8.1 What the extraction covers
 

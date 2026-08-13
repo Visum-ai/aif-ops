@@ -25,6 +25,8 @@ digraph deschutes_leak_eop {
   SEQ [label=<<b>Leak response sequence</b><br/><font point-size="10">Sequence (6 steps)</font>>, fillcolor="#cdeede"];
   A1  [label=<<b>1. PLC fires leak alarm</b><br/><font point-size="10">AutomatedAction</font>>, fillcolor="#cdeede"];
   A3  [label=<<b>3. Shut supply valve</b><br/><font point-size="10">ManualAction</font>>, fillcolor="#cdeede"];
+  IP  [label=<<b>Pump supply shut-off valve</b><br/><font point-size="10">IsolationPoint</font>>, fillcolor="#cfe3ff"];
+  MOP [label=<<b>Pump removal</b><br/><font point-size="10">MOP (Procedure)</font>>, fillcolor="#cdeede"];
 
   // Actors (amber)
   PLC  [label=<<b>PLC control system</b><br/><font point-size="10">Actor</font>>, fillcolor="#ffe2b0"];
@@ -44,6 +46,8 @@ digraph deschutes_leak_eop {
   SEQ -> A3       [label="hasAction"];
   A1  -> PLC      [label="performedBy"];
   A3  -> TECH     [label="performedBy"];
+  IP  -> EOP      [label="hasIsolationProcedure"];
+  IP  -> MOP      [label="hasIsolationProcedure"];
 
   edge [style=dashed, color="#9aa3ab", fontcolor="#7a838b", penwidth=0.9];
   CDU -> SRC [label="hasSource"];

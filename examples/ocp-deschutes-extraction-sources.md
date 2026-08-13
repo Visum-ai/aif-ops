@@ -178,6 +178,12 @@ Source: §13.2 Pump Removal Step 1, p.42
 
 > "1. Shut off supply valve"
 
+`hasIsolationProcedure` links to both `deschutes:MOP_PumpRemoval` and
+`deschutes:EOP_LeakResponse`: Leak Response step 3
+(`deschutes:Action_EOP_ShutSupplyValve`) cites the identical spec location,
+§13.2 Step 1 p.42, for the same instruction, so both procedures isolate the
+CDU at this same physical valve.
+
 ### `deschutes:IP_FilterInletValve` — `aif-ops:IsolationPoint`
 
 Source: §13.3 Filter Removal Step 1, p.44

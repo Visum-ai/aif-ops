@@ -164,6 +164,7 @@ deschutes:Action_FlowMeter_Unbolt a aif-ops:ManualAction ;
 deschutes:IP_PumpSupplyValve a aif-ops:IsolationPoint ;
     rdfs:label "Pump supply shut-off valve" ;
     aif-ops:hasIsolationProcedure deschutes:MOP_PumpRemoval ;
+    aif-ops:hasIsolationProcedure deschutes:EOP_LeakResponse ;
     aif-ops:hasSource "ocp-deschutes-cdu-spec-2025 §13.2 Pump Removal Step 1 p.42: Shut off supply valve" .
 
 deschutes:IP_FilterInletValve a aif-ops:IsolationPoint ;
